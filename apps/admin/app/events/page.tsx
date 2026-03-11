@@ -4,6 +4,19 @@ import EventsClient from "./EventsClient";
 import AdminLayout from "@/components/AdminLayout";
 import type { AnalyticsEvent, EventType } from "@snap-it/types";
 
+type RawEvent = {
+  id: string;
+  type: string;
+  tool: string | null;
+  meta: string | null;
+  country: string | null;
+  region: string | null;
+  browser: string | null;
+  os: string | null;
+  device: string | null;
+  createdAt: string;
+};
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -29,7 +42,7 @@ export default async function EventsPage({
       type,
     });
     data = {
-      events: result.events.map((e) => ({
+      events: result.events.map((e: RawEvent) => ({
         ...e,
         type: e.type as EventType,
         device: e.device as AnalyticsEvent["device"],
