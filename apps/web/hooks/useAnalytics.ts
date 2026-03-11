@@ -7,9 +7,10 @@ export function useAnalytics() {
     (type: EventType, options?: { tool?: string; meta?: string }) => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'
 
-      // Use sendBeacon when available for reliability on page unload
+      // tRPC wire protocol: input must be wrapped in a `json` key
+      // Shape: { "0": { "json": { ...input } } }
       const payload = JSON.stringify({
-        '0': { type, tool: options?.tool, meta: options?.meta },
+        '0': { json: { type, tool: options?.tool ?? null, meta: options?.meta ?? null } },
       })
 
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {

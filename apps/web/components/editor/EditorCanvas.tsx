@@ -59,6 +59,11 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
   const fabricCanvasRef = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const screenshotObjRef = useRef<any>(null)
+  // Track whether fabric has finished initializing
+  const fabricReadyRef = useRef(false)
+  // Keep a ref to the latest imageDataUrl so the init effect can read it
+  const imageDataUrlRef = useRef<string | null>(imageDataUrl)
+
   const [isDrawingBlur, setIsDrawingBlur] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const blurStartRef = useRef<{ x: number; y: number } | null>(null)
@@ -66,6 +71,9 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
   const blurRectRef = useRef<any>(null)
 
   const { background, shadow, cornerRadius, padding, activeTool, aspectRatio } = useEditorStore()
+
+  // Always keep imageDataUrlRef in sync with the prop
+  imageDataUrlRef.current = imageDataUrl
 
   // Canvas dimensions based on aspect ratio
   const getCanvasDimensions = useCallback(() => {
@@ -106,6 +114,62 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     }
     canvas.renderAll()
   }, [background])
+
+  // Load an image dataUrl onto the fabric canvas — shared by init and prop-change effects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loadImage = useCallback((dataUrl: string, canvas: any, fabric: any) => {
+    const currentPadding = useEditorStore.getState().padding
+    fabric.FabricImage.fromURL(dataUrl).then((img: any) => {
+      if (!canvas) return
+
+      const { width: canvasW, height: canvasH } = canvas
+      const availW = canvasW - currentPadding * 2
+      const availH = canvasH - currentPadding * 2
+
+      const scaleX = availW / (img.width ?? 1)
+      const scaleY = availH / (img.height ?? 1)
+      const scale = Math.min(scaleX, scaleY, 1)
+
+      img.set({
+        left: canvasW / 2,
+        top: canvasH / 2,
+        originX: 'center',
+        originY: 'center',
+        scaleX: scale,
+        scaleY: scale,
+      })
+
+      if (screenshotObjRef.current) {
+        canvas.remove(screenshotObjRef.current)
+      }
+
+      screenshotObjRef.current = img
+      canvas.add(img)
+      canvas.sendObjectToBack(img)
+      applyBackground(canvas, fabric)
+
+      // Apply corner radius and shadow
+      const { shadow: shadowCfg, cornerRadius: cr } = useEditorStore.getState()
+      const clip = new fabric.Rect({
+        width: img.width,
+        height: img.height,
+        rx: cr,
+        ry: cr,
+        originX: 'center',
+        originY: 'center',
+      })
+      img.clipPath = clip
+      if (shadowCfg.enabled) {
+        img.shadow = new fabric.Shadow({
+          color: shadowCfg.color,
+          blur: shadowCfg.blur,
+          offsetX: shadowCfg.offsetX,
+          offsetY: shadowCfg.offsetY,
+        })
+      }
+      canvas.renderAll()
+    })
+  }, [applyBackground])
 
   // Apply shadow and corner radius to screenshot object
   const applyScreenshotStyle = useCallback(() => {
@@ -160,58 +224,33 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
       })
 
       fabricCanvasRef.current = canvas
+      fabricReadyRef.current = true
       applyBackground(canvas, fabric)
+
+      // If an image was passed before fabric finished initializing, load it now
+      if (imageDataUrlRef.current) {
+        loadImage(imageDataUrlRef.current, canvas, fabric)
+      }
     }
 
     init()
 
     return () => {
       isMounted = false
+      fabricReadyRef.current = false
       fabricCanvasRef.current?.dispose()
       fabricCanvasRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Load image when imageDataUrl changes
+  // Load image when imageDataUrl prop changes — only fires if fabric is already ready
+  // (if fabric isn't ready yet, the init effect handles loading via imageDataUrlRef)
   useEffect(() => {
-    if (!imageDataUrl || !fabricModule) return
-    const fabric = fabricModule
+    if (!imageDataUrl || !fabricReadyRef.current || !fabricModule) return
     const canvas = fabricCanvasRef.current
     if (!canvas) return
-
-    fabric.FabricImage.fromURL(imageDataUrl).then((img) => {
-      if (!canvas) return
-
-      const { width: canvasW, height: canvasH } = canvas
-      const availW = canvasW - padding * 2
-      const availH = canvasH - padding * 2
-
-      const scaleX = availW / (img.width ?? 1)
-      const scaleY = availH / (img.height ?? 1)
-      const scale = Math.min(scaleX, scaleY, 1)
-
-      img.set({
-        left: canvasW / 2,
-        top: canvasH / 2,
-        originX: 'center',
-        originY: 'center',
-        scaleX: scale,
-        scaleY: scale,
-      })
-
-      // Remove previous screenshot if any
-      if (screenshotObjRef.current) {
-        canvas.remove(screenshotObjRef.current)
-      }
-
-      screenshotObjRef.current = img
-      canvas.add(img)
-      canvas.sendObjectToBack(img)
-      applyBackground(canvas, fabric)
-      applyScreenshotStyle()
-      canvas.renderAll()
-    })
+    loadImage(imageDataUrl, canvas, fabricModule)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageDataUrl])
 
