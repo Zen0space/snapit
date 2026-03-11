@@ -1,6 +1,15 @@
-// tRPC client for fire-and-forget analytics calls from the web app.
-// We use raw fetch in useAnalytics.ts to avoid pulling the backend package
-// into the frontend bundle. This file is kept as a reference for future use
-// if we need typed queries (e.g., from a shared API types package).
-export {}
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client'
+import type { AppRouter } from '@snap-it/backend/src/router'
 
+/**
+ * Singleton tRPC proxy client — industry standard pattern.
+ * All procedures are fully type-safe end-to-end via AppRouter.
+ * Used for fire-and-forget analytics calls from the web editor.
+ */
+export const trpc = createTRPCProxyClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'}/trpc`,
+    }),
+  ],
+})

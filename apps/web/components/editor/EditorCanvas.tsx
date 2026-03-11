@@ -1,50 +1,47 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useEditorStore } from '@/store/editorStore'
-
-// Fabric is loaded dynamically to avoid SSR issues
-let fabricModule: typeof import('fabric') | null = null
 
 interface EditorCanvasProps {
   imageDataUrl: string | null
   onExportReady: (exportFn: () => void) => void
 }
 
-// Parse a CSS linear-gradient string into a fabric.Gradient
-function parseCSSGradientToFabric(
+type FabricModule = typeof import('fabric')
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Convert a CSS linear-gradient string to a Fabric.js Gradient instance. */
+function makeFabricGradient(
   cssGradient: string,
   width: number,
   height: number,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fabric: any
+  fabric: FabricModule
 ) {
-  // Extract angle and color stops from "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
   const match = cssGradient.match(/linear-gradient\((\d+)deg,\s*(.+)\)/)
   if (!match) return null
 
-  const angle = parseInt(match[1])
-  const stopsStr = match[2]
+  const angle = parseInt(match[1], 10)
+  const stops = match[2].split(',').map((s) => s.trim())
 
   const colorStops: Record<string, string> = {}
-  const stops = stopsStr.split(',').map((s) => s.trim())
   stops.forEach((stop) => {
-    const parts = stop.split(/\s+/)
-    const color = parts[0]
-    const pos = parseFloat(parts[1]) / 100
-    colorStops[pos] = color
+    const [color, pct] = stop.split(/\s+/)
+    colorStops[String(parseFloat(pct) / 100)] = color
   })
 
-  // Convert angle to x1/y1/x2/y2
   const rad = ((angle - 90) * Math.PI) / 180
-  const x1 = (Math.cos(rad + Math.PI) / 2 + 0.5) * width
-  const y1 = (Math.sin(rad + Math.PI) / 2 + 0.5) * height
-  const x2 = (Math.cos(rad) / 2 + 0.5) * width
-  const y2 = (Math.sin(rad) / 2 + 0.5) * height
-
   return new fabric.Gradient({
     type: 'linear',
-    coords: { x1, y1, x2, y2 },
+    coords: {
+      x1: (Math.cos(rad + Math.PI) / 2 + 0.5) * width,
+      y1: (Math.sin(rad + Math.PI) / 2 + 0.5) * height,
+      x2: (Math.cos(rad) / 2 + 0.5) * width,
+      y2: (Math.sin(rad) / 2 + 0.5) * height,
+    },
     colorStops: Object.entries(colorStops).map(([offset, color]) => ({
       offset: parseFloat(offset),
       color,
@@ -52,133 +49,77 @@ function parseCSSGradientToFabric(
   })
 }
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanvasProps) {
-  const canvasElRef = useRef<HTMLCanvasElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  // ── Refs ──────────────────────────────────────────────────────────────────
+  const containerRef   = useRef<HTMLDivElement>(null)
+  const canvasElRef    = useRef<HTMLCanvasElement>(null)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fabricCanvasRef = useRef<any>(null)
+  const fabricRef      = useRef<FabricModule | null>(null)   // the imported fabric module
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const screenshotObjRef = useRef<any>(null)
-  // Track whether fabric has finished initializing
+  const canvasRef      = useRef<any>(null)                   // fabric.Canvas instance
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const screenshotRef  = useRef<any>(null)                   // the loaded screenshot FabricImage
   const fabricReadyRef = useRef(false)
-  // Keep a ref to the latest imageDataUrl so the init effect can read it
-  const imageDataUrlRef = useRef<string | null>(imageDataUrl)
 
-  const [isDrawingBlur, setIsDrawingBlur] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const blurStartRef = useRef<{ x: number; y: number } | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const blurRectRef = useRef<any>(null)
+  // Mirror the prop into a ref so the async init can read the latest value
+  const imageUrlRef    = useRef<string | null>(imageDataUrl)
+  imageUrlRef.current  = imageDataUrl
 
+  // ── Store ─────────────────────────────────────────────────────────────────
   const { background, shadow, cornerRadius, padding, activeTool, aspectRatio } = useEditorStore()
 
-  // Always keep imageDataUrlRef in sync with the prop
-  imageDataUrlRef.current = imageDataUrl
+  // ── Canvas dimensions ─────────────────────────────────────────────────────
+  const getDimensions = useCallback(() => {
+    const el = containerRef.current
+    if (!el) return { width: 800, height: 600 }
 
-  // Canvas dimensions based on aspect ratio
-  const getCanvasDimensions = useCallback(() => {
-    const container = containerRef.current
-    if (!container) return { width: 800, height: 600 }
+    const maxW = el.clientWidth  - 48
+    const maxH = el.clientHeight - 48
 
-    const maxW = container.clientWidth - 48
-    const maxH = container.clientHeight - 48
-
-    if (aspectRatio.id === 'free' || (aspectRatio.width === 0 && aspectRatio.height === 0)) {
+    if (!aspectRatio.width || !aspectRatio.height) {
       return { width: Math.min(maxW, 900), height: Math.min(maxH, 650) }
     }
 
     const ratio = aspectRatio.width / aspectRatio.height
     let w = Math.min(maxW, 900)
     let h = w / ratio
-
-    if (h > maxH) {
-      h = maxH
-      w = h * ratio
-    }
+    if (h > maxH) { h = maxH; w = h * ratio }
 
     return { width: Math.round(w), height: Math.round(h) }
   }, [aspectRatio])
 
-  // Apply background to the fabric canvas
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const applyBackground = useCallback((canvas: any, fabric: any) => {
+  // ── Background ────────────────────────────────────────────────────────────
+  const applyBackground = useCallback(() => {
+    const canvas = canvasRef.current
+    const fabric = fabricRef.current
+    if (!canvas || !fabric) return
+
     const { width, height } = canvas
+
     if (background.value === 'transparent') {
       canvas.backgroundColor = 'transparent'
     } else if (background.type === 'gradient') {
-      const grad = parseCSSGradientToFabric(background.value, width, height, fabric)
-      if (grad) canvas.backgroundColor = grad
-      else canvas.backgroundColor = '#1a1a2e'
+      const grad = makeFabricGradient(background.value, width, height, fabric)
+      canvas.backgroundColor = grad ?? '#1a1a2e'
     } else {
       canvas.backgroundColor = background.value
     }
     canvas.renderAll()
   }, [background])
 
-  // Load an image dataUrl onto the fabric canvas — shared by init and prop-change effects
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadImage = useCallback((dataUrl: string, canvas: any, fabric: any) => {
-    const currentPadding = useEditorStore.getState().padding
-    fabric.FabricImage.fromURL(dataUrl).then((img: any) => {
-      if (!canvas) return
-
-      const { width: canvasW, height: canvasH } = canvas
-      const availW = canvasW - currentPadding * 2
-      const availH = canvasH - currentPadding * 2
-
-      const scaleX = availW / (img.width ?? 1)
-      const scaleY = availH / (img.height ?? 1)
-      const scale = Math.min(scaleX, scaleY, 1)
-
-      img.set({
-        left: canvasW / 2,
-        top: canvasH / 2,
-        originX: 'center',
-        originY: 'center',
-        scaleX: scale,
-        scaleY: scale,
-      })
-
-      if (screenshotObjRef.current) {
-        canvas.remove(screenshotObjRef.current)
-      }
-
-      screenshotObjRef.current = img
-      canvas.add(img)
-      canvas.sendObjectToBack(img)
-      applyBackground(canvas, fabric)
-
-      // Apply corner radius and shadow
-      const { shadow: shadowCfg, cornerRadius: cr } = useEditorStore.getState()
-      const clip = new fabric.Rect({
-        width: img.width,
-        height: img.height,
-        rx: cr,
-        ry: cr,
-        originX: 'center',
-        originY: 'center',
-      })
-      img.clipPath = clip
-      if (shadowCfg.enabled) {
-        img.shadow = new fabric.Shadow({
-          color: shadowCfg.color,
-          blur: shadowCfg.blur,
-          offsetX: shadowCfg.offsetX,
-          offsetY: shadowCfg.offsetY,
-        })
-      }
-      canvas.renderAll()
-    })
-  }, [applyBackground])
-
-  // Apply shadow and corner radius to screenshot object
-  const applyScreenshotStyle = useCallback(() => {
-    const obj = screenshotObjRef.current
-    const fabric = fabricModule
+  // ── Shadow + corner radius ─────────────────────────────────────────────────
+  const applyStyle = useCallback(() => {
+    const obj    = screenshotRef.current
+    const fabric = fabricRef.current
     if (!obj || !fabric) return
 
-    // Corner radius via clipPath
-    const clip = new fabric.Rect({
+    // clipPath is in object-local space (before scale) — use raw width/height
+    obj.clipPath = new fabric.Rect({
       width: obj.width,
       height: obj.height,
       rx: cornerRadius,
@@ -186,36 +127,76 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
       originX: 'center',
       originY: 'center',
     })
-    obj.clipPath = clip
 
-    // Shadow
-    if (shadow.enabled) {
-      obj.shadow = new fabric.Shadow({
-        color: shadow.color,
-        blur: shadow.blur,
-        offsetX: shadow.offsetX,
-        offsetY: shadow.offsetY,
-      })
-    } else {
-      obj.shadow = null
-    }
+    obj.shadow = shadow.enabled
+      ? new fabric.Shadow({
+          color:   shadow.color,
+          blur:    shadow.blur,
+          offsetX: shadow.offsetX,
+          offsetY: shadow.offsetY,
+        })
+      : null
 
-    fabricCanvasRef.current?.renderAll()
+    canvasRef.current?.renderAll()
   }, [shadow, cornerRadius])
 
-  // Initialize fabric canvas
+  // ── Load image ────────────────────────────────────────────────────────────
+  const loadImage = useCallback(
+    (dataUrl: string) => {
+      const canvas = canvasRef.current
+      const fabric = fabricRef.current
+      if (!canvas || !fabric) return
+
+      const { padding: pad, shadow: shadowCfg, cornerRadius: cr } =
+        useEditorStore.getState()
+
+      fabric.FabricImage.fromURL(dataUrl).then((img: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        const { width: cw, height: ch } = canvas
+        const scale = Math.min(
+          (cw - pad * 2) / (img.width  ?? 1),
+          (ch - pad * 2) / (img.height ?? 1),
+          1
+        )
+
+        img.set({ left: cw / 2, top: ch / 2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale })
+
+        if (screenshotRef.current) canvas.remove(screenshotRef.current)
+        screenshotRef.current = img
+
+        canvas.add(img)
+        canvas.sendObjectToBack(img)
+
+        // Apply clip + shadow immediately after load
+        img.clipPath = new fabric.Rect({
+          width: img.width, height: img.height,
+          rx: cr, ry: cr,
+          originX: 'center', originY: 'center',
+        })
+        if (shadowCfg.enabled) {
+          img.shadow = new fabric.Shadow({
+            color: shadowCfg.color, blur: shadowCfg.blur,
+            offsetX: shadowCfg.offsetX, offsetY: shadowCfg.offsetY,
+          })
+        }
+
+        applyBackground()
+        canvas.renderAll()
+      })
+    },
+    [applyBackground]
+  )
+
+  // ── Init fabric (runs once on mount) ──────────────────────────────────────
   useEffect(() => {
-    let isMounted = true
+    let alive = true
 
-    const init = async () => {
+    ;(async () => {
       const fabric = await import('fabric')
-      if (!isMounted) return
-      fabricModule = fabric
+      if (!alive || !canvasElRef.current) return
 
-      if (!canvasElRef.current) return
+      fabricRef.current = fabric
 
-      const { width, height } = getCanvasDimensions()
-
+      const { width, height } = getDimensions()
       const canvas = new fabric.Canvas(canvasElRef.current, {
         width,
         height,
@@ -223,200 +204,148 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
         preserveObjectStacking: true,
       })
 
-      fabricCanvasRef.current = canvas
+      canvasRef.current   = canvas
       fabricReadyRef.current = true
-      applyBackground(canvas, fabric)
 
-      // If an image was passed before fabric finished initializing, load it now
-      if (imageDataUrlRef.current) {
-        loadImage(imageDataUrlRef.current, canvas, fabric)
-      }
-    }
+      applyBackground()
 
-    init()
+      // If imageDataUrl arrived before fabric was ready, load it now
+      if (imageUrlRef.current) loadImage(imageUrlRef.current)
+    })()
 
     return () => {
-      isMounted = false
+      alive = false
       fabricReadyRef.current = false
-      fabricCanvasRef.current?.dispose()
-      fabricCanvasRef.current = null
+      canvasRef.current?.dispose()
+      canvasRef.current  = null
+      fabricRef.current  = null
+      screenshotRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Load image when imageDataUrl prop changes — only fires if fabric is already ready
-  // (if fabric isn't ready yet, the init effect handles loading via imageDataUrlRef)
+  // ── React to new imageDataUrl prop ────────────────────────────────────────
   useEffect(() => {
-    if (!imageDataUrl || !fabricReadyRef.current || !fabricModule) return
-    const canvas = fabricCanvasRef.current
-    if (!canvas) return
-    loadImage(imageDataUrl, canvas, fabricModule)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!imageDataUrl || !fabricReadyRef.current) return
+    loadImage(imageDataUrl)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageDataUrl])
 
-  // Re-apply background when it changes
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current
-    const fabric = fabricModule
-    if (!canvas || !fabric) return
-    applyBackground(canvas, fabric)
-  }, [applyBackground])
+  // ── React to background changes ───────────────────────────────────────────
+  useEffect(() => { applyBackground() }, [applyBackground])
 
-  // Re-apply shadow / corners when they change
-  useEffect(() => {
-    applyScreenshotStyle()
-  }, [applyScreenshotStyle])
+  // ── React to shadow / corner radius changes ───────────────────────────────
+  useEffect(() => { applyStyle() }, [applyStyle])
 
-  // Resize canvas when aspect ratio changes
+  // ── React to aspect ratio / padding changes ───────────────────────────────
   useEffect(() => {
-    const canvas = fabricCanvasRef.current
-    const fabric = fabricModule
+    const canvas = canvasRef.current
+    const fabric = fabricRef.current
     if (!canvas || !fabric) return
 
-    const { width, height } = getCanvasDimensions()
+    const { width, height } = getDimensions()
     canvas.setWidth(width)
     canvas.setHeight(height)
-    applyBackground(canvas, fabric)
 
-    // Re-center and re-scale screenshot
-    const obj = screenshotObjRef.current
+    const obj = screenshotRef.current
     if (obj) {
-      const availW = width - padding * 2
-      const availH = height - padding * 2
-      const scaleX = availW / (obj.width ?? 1)
-      const scaleY = availH / (obj.height ?? 1)
-      const scale = Math.min(scaleX, scaleY, 1)
+      const scale = Math.min(
+        (width  - padding * 2) / (obj.width  ?? 1),
+        (height - padding * 2) / (obj.height ?? 1),
+        1
+      )
       obj.set({ left: width / 2, top: height / 2, scaleX: scale, scaleY: scale })
-      applyScreenshotStyle()
+      applyStyle()
     }
-    canvas.renderAll()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    applyBackground()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aspectRatio, padding])
 
-  // Tool mode effects
+  // ── Active tool ───────────────────────────────────────────────────────────
   useEffect(() => {
-    const canvas = fabricCanvasRef.current
-    const fabric = fabricModule
+    const canvas = canvasRef.current
+    const fabric = fabricRef.current
     if (!canvas || !fabric) return
 
-    // Reset modes
     canvas.isDrawingMode = false
-    canvas.selection = activeTool === 'select'
+    canvas.selection     = activeTool === 'select'
     canvas.defaultCursor = activeTool === 'select' ? 'default' : 'crosshair'
 
     if (activeTool === 'text') {
-      const handleTextClick = (opt: { e: MouseEvent }) => {
-        if (activeTool !== 'text') return
+      const onMouseDown = (opt: { e: MouseEvent }) => {
         const pointer = canvas.getPointer(opt.e)
         const text = new fabric.IText('Click to type...', {
           left: pointer.x,
-          top: pointer.y,
-          fontSize: 18,
-          fill: '#ffffff',
+          top:  pointer.y,
+          fontSize:   18,
+          fill:       '#ffffff',
           fontFamily: 'Inter, system-ui, sans-serif',
-          shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 6 }),
+          shadow:     new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 6 }),
         })
         canvas.add(text)
         canvas.setActiveObject(text)
         text.enterEditing()
         canvas.renderAll()
-        // Switch back to select after placing
         useEditorStore.getState().setActiveTool('select')
       }
-      canvas.on('mouse:down', handleTextClick)
-      return () => canvas.off('mouse:down', handleTextClick)
+      canvas.on('mouse:down', onMouseDown)
+      return () => canvas.off('mouse:down', onMouseDown)
     }
 
     if (activeTool === 'blur') {
-      let isDown = false
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let rect: any = null
       let startX = 0
       let startY = 0
 
       const onMouseDown = (opt: { e: MouseEvent }) => {
-        isDown = true
         const pointer = canvas.getPointer(opt.e)
         startX = pointer.x
         startY = pointer.y
         rect = new fabric.Rect({
-          left: startX,
-          top: startY,
-          width: 0,
-          height: 0,
+          left: startX, top: startY, width: 0, height: 0,
           fill: 'rgba(0,0,0,0.01)',
           stroke: 'rgba(255,255,255,0.4)',
           strokeWidth: 1,
           strokeDashArray: [4, 4],
-          selectable: true,
         })
         canvas.add(rect)
       }
 
       const onMouseMove = (opt: { e: MouseEvent }) => {
-        if (!isDown || !rect) return
+        if (!rect) return
         const pointer = canvas.getPointer(opt.e)
         rect.set({
-          width: Math.abs(pointer.x - startX),
+          width:  Math.abs(pointer.x - startX),
           height: Math.abs(pointer.y - startY),
-          left: Math.min(pointer.x, startX),
-          top: Math.min(pointer.y, startY),
+          left:   Math.min(pointer.x, startX),
+          top:    Math.min(pointer.y, startY),
         })
         canvas.renderAll()
       }
 
       const onMouseUp = () => {
-        if (!isDown || !rect) return
-        isDown = false
+        if (!rect) return
 
-        // Apply blur filter effect using a backdrop blur rect
-        rect.set({
-          fill: 'rgba(100,100,100,0.5)',
-          stroke: 'none',
-          backdropFilter: 'blur(8px)',
-        })
+        // Build a checkerboard-pattern redact overlay
+        const patternEl = document.createElement('canvas')
+        patternEl.width  = 8
+        patternEl.height = 8
+        const ctx = patternEl.getContext('2d')!
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';  ctx.fillRect(0, 0, 4, 4); ctx.fillRect(4, 4, 4, 4)
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';  ctx.fillRect(4, 0, 4, 4); ctx.fillRect(0, 4, 4, 4)
 
-        // Create a frosted-glass blurred overlay using fabric filters
-        const blurredOverlay = new fabric.Rect({
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          fill: 'rgba(200,200,200,0.35)',
-          rx: 4,
-          ry: 4,
+        const redact = new fabric.Rect({
+          left: rect.left, top: rect.top,
+          width: rect.width, height: rect.height,
+          fill: new fabric.Pattern({ source: patternEl, repeat: 'repeat' }),
+          rx: 3, ry: 3,
           selectable: true,
         })
 
-        // Add pixelated label inside
-        const label = new fabric.Rect({
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
-          fill: new fabric.Pattern({
-            source: (() => {
-              const patternCanvas = document.createElement('canvas')
-              patternCanvas.width = 8
-              patternCanvas.height = 8
-              const ctx = patternCanvas.getContext('2d')!
-              ctx.fillStyle = 'rgba(0,0,0,0.15)'
-              ctx.fillRect(0, 0, 4, 4)
-              ctx.fillRect(4, 4, 4, 4)
-              ctx.fillStyle = 'rgba(255,255,255,0.15)'
-              ctx.fillRect(4, 0, 4, 4)
-              ctx.fillRect(0, 4, 4, 4)
-              return patternCanvas
-            })(),
-            repeat: 'repeat',
-          }),
-          selectable: false,
-          evented: false,
-        })
-
         canvas.remove(rect)
-        canvas.add(blurredOverlay)
-        canvas.add(label)
+        canvas.add(redact)
         canvas.renderAll()
         rect = null
         useEditorStore.getState().setActiveTool('select')
@@ -424,53 +353,47 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
 
       canvas.on('mouse:down', onMouseDown)
       canvas.on('mouse:move', onMouseMove)
-      canvas.on('mouse:up', onMouseUp)
+      canvas.on('mouse:up',   onMouseUp)
 
       return () => {
         canvas.off('mouse:down', onMouseDown)
         canvas.off('mouse:move', onMouseMove)
-        canvas.off('mouse:up', onMouseUp)
+        canvas.off('mouse:up',   onMouseUp)
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool])
 
-  // Export function — passed up to the toolbar
+  // ── Export ────────────────────────────────────────────────────────────────
   useEffect(() => {
     onExportReady(() => {
-      const canvas = fabricCanvasRef.current
+      const canvas = canvasRef.current
       if (!canvas) return
       const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 })
       const a = document.createElement('a')
-      a.href = dataUrl
+      a.href     = dataUrl
       a.download = 'snap-it.png'
       a.click()
     })
   }, [onExportReady])
 
-  void isDrawingBlur
-  void setIsDrawingBlur
-  void blurStartRef
-  void blurRectRef
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       ref={containerRef}
       className="flex-1 flex items-center justify-center overflow-hidden bg-[#0a0a0a] relative"
       style={{
-        backgroundImage:
-          'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)',
-        backgroundSize: '24px 24px',
+        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)',
+        backgroundSize:  '24px 24px',
       }}
     >
       <div className="rounded-xl overflow-hidden shadow-2xl">
         <canvas ref={canvasElRef} />
       </div>
 
-      {/* Tool hint */}
       {activeTool !== 'select' && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur text-white/70 text-xs px-3 py-1.5 rounded-full border border-white/10">
-          {activeTool === 'text' ? 'Click to place text' : 'Draw to blur an area'} · Press{' '}
+          {activeTool === 'text' ? 'Click to place text' : 'Draw to redact an area'} · Press{' '}
           <kbd className="font-mono">Esc</kbd> to cancel
         </div>
       )}

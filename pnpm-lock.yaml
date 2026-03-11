@@ -69,9 +69,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@snap-it/backend':
+        specifier: workspace:*
+        version: link:../../packages/backend
       '@snap-it/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@trpc/client':
+        specifier: ^10.45.2
+        version: 10.45.4(@trpc/server@10.45.4)
       '@trpc/server':
         specifier: ^10.45.2
         version: 10.45.4

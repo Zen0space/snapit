@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@snap-it/backend": "workspace:*",
     "@snap-it/types": "workspace:*",
+    "@trpc/client": "^10.45.2",
     "@trpc/server": "^10.45.2",
     "fabric": "^6.5.4",
     "next": "^14.2.21",
