@@ -1,0 +1,74 @@
+# Dependencies
+node_modules
+**/node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+.turbo
+dist
+build
+out
+*.tsbuildinfo
+
+# Apps (not needed for backend build)
+apps/
+
+# Testing
+coverage
+.nyc_output
+
+# Git
+.git
+.gitignore
+.github
+
+# Environment files
+.env
+.env*.local
+!.env.example
+!.env*.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Misc
+*.md
+!README.md
+LICENSE
+.editorconfig
+.prettierrc
+.prettierignore
+.eslintrc
+.eslintignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.github/workflows
+
+# Temporary files
+tmp
+temp
+*.tmp

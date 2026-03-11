@@ -1,0 +1,163 @@
+name: Docker Build — Backend
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+    paths:
+      - 'packages/backend/**'
+      - 'packages/types/**'
+      - 'pnpm-lock.yaml'
+      - 'docker-compose.yml'
+      - 'docker-compose.prod.yml'
+      - '.github/workflows/docker-build-backend.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'packages/backend/**'
+      - 'packages/types/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/backend
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./packages/backend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export image for release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          # Extract version from tag (e.g., refs/tags/v1.0.0 -> v1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/}
+
+          echo "Pulling built image..."
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+
+          echo "Tagging as snapit-backend:$VERSION..."
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION snapit-backend:$VERSION
+
+          echo "Exporting image..."
+          mkdir -p docker-exports
+          docker save -o docker-exports/snapit-backend-$VERSION.tar snapit-backend:$VERSION
+
+          echo "Compressing..."
+          gzip docker-exports/snapit-backend-$VERSION.tar
+
+          echo "Export complete:"
+          ls -lh docker-exports/
+
+      - name: Upload release artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ github.ref_name }}
+          path: docker-exports/snapit-backend-${{ github.ref_name }}.tar.gz
+          retention-days: 90
+
+      - name: Create release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cat > release-notes.md << 'EOF'
+          ## Docker Image
+
+          **Registry:** `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}`
+
+          ### Pull from GitHub Container Registry
+          ```bash
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          ```
+
+          ### Or download and import the artifact
+          1. Download the `docker-image-${{ github.ref_name }}` artifact from this release
+          2. Import on your VPS:
+          ```bash
+          gunzip -c snapit-backend-${{ github.ref_name }}.tar.gz | docker load
+          ```
+
+          ### Deploy with Docker Compose
+          ```bash
+          # Create .env file from template
+          cp packages/backend/.env.production.example .env
+          nano .env  # Edit with your values
+
+          # Start services
+          docker-compose -f docker-compose.prod.yml up -d
+
+          # Check logs
+          docker-compose -f docker-compose.prod.yml logs -f backend
+          ```
+
+          ### Verify deployment
+          ```bash
+          curl http://localhost:9000/health
+          ```
+
+          **Image size:** ~150-200MB (uncompressed), ~50-80MB (compressed)
+          **Platforms:** linux/amd64, linux/arm64
+          EOF
+
+          echo "Release notes generated:"
+          cat release-notes.md
+
+      - name: Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Docker image built and pushed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

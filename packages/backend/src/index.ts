@@ -5,7 +5,7 @@ import { appRouter } from './router'
 import { createContext } from './trpc'
 
 const app = express()
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 9000
 
 // CORS — allow web and admin apps
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000,http://localhost:3002')

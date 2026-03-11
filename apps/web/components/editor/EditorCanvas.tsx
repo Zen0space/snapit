@@ -9,6 +9,10 @@ interface EditorCanvasProps {
 }
 
 type FabricModule = typeof import('fabric')
+type FabricCanvas = InstanceType<FabricModule['Canvas']>
+type FabricImage = InstanceType<FabricModule['FabricImage']>
+type FabricRect = InstanceType<FabricModule['Rect']>
+type FabricPointerEvent = import('fabric').TPointerEventInfo
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,12 +62,9 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
   const containerRef   = useRef<HTMLDivElement>(null)
   const canvasElRef    = useRef<HTMLCanvasElement>(null)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fabricRef      = useRef<FabricModule | null>(null)   // the imported fabric module
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const canvasRef      = useRef<any>(null)                   // fabric.Canvas instance
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const screenshotRef  = useRef<any>(null)                   // the loaded screenshot FabricImage
+  const canvasRef      = useRef<FabricCanvas | null>(null)   // fabric.Canvas instance
+  const screenshotRef  = useRef<FabricImage | null>(null)    // the loaded screenshot FabricImage
   const fabricReadyRef = useRef(false)
 
   // Mirror the prop into a ref so the async init can read the latest value
@@ -202,7 +203,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
       const { shadow: shadowCfg, cornerRadius: cr, padding: pad, canvasMode, canvasWidth, canvasHeight } =
         useEditorStore.getState()
 
-      fabric.FabricImage.fromURL(dataUrl).then((img: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      fabric.FabricImage.fromURL(dataUrl).then((img: FabricImage) => {
         // Auto-detect image dimensions and update canvas size
         if (img.width && img.height) {
           setUploadedImageDimensions(img.width, img.height)
@@ -350,7 +351,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     canvas.defaultCursor = activeTool === 'select' ? 'default' : 'crosshair'
 
     if (activeTool === 'text') {
-      const onMouseDown = (opt: { e: MouseEvent }) => {
+      const onMouseDown = (opt: FabricPointerEvent) => {
         const pointer = canvas.getPointer(opt.e)
         const text = new fabric.IText('Click to type...', {
           left: pointer.x,
@@ -371,12 +372,11 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     }
 
     if (activeTool === 'blur') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let rect: any = null
+      let rect: FabricRect | null = null
       let startX = 0
       let startY = 0
 
-      const onMouseDown = (opt: { e: MouseEvent }) => {
+      const onMouseDown = (opt: FabricPointerEvent) => {
         const pointer = canvas.getPointer(opt.e)
         startX = pointer.x
         startY = pointer.y
@@ -390,7 +390,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
         canvas.add(rect)
       }
 
-      const onMouseMove = (opt: { e: MouseEvent }) => {
+      const onMouseMove = (opt: FabricPointerEvent) => {
         if (!rect) return
         const pointer = canvas.getPointer(opt.e)
         rect.set({
