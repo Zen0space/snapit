@@ -114,19 +114,19 @@ export const analyticsRouter = router({
       totalUploads,
       totalEvents,
       exportsToday,
-      topCountries: countryRows.map((r) => ({
+      topCountries: countryRows.map((r: { country: string | null; _count: { country: number } }) => ({
         country: r.country ?? 'Unknown',
         count: r._count.country,
       })),
-      topBrowsers: browserRows.map((r) => ({
+      topBrowsers: browserRows.map((r: { browser: string | null; _count: { browser: number } }) => ({
         browser: r.browser ?? 'Unknown',
         count: r._count.browser,
       })),
-      topDevices: deviceRows.map((r) => ({
+      topDevices: deviceRows.map((r: { device: string | null; _count: { device: number } }) => ({
         device: r.device ?? 'Unknown',
         count: r._count.device,
       })),
-      eventsOverTime: dailyRows.map((r) => ({
+      eventsOverTime: dailyRows.map((r: { date: string; count: bigint }) => ({
         date: r.date,
         count: Number(r.count),
       })),
@@ -157,7 +157,7 @@ export const analyticsRouter = router({
       ])
 
       return {
-        events: events.map((e) => ({
+        events: events.map((e: { id: string; type: string; tool: string | null; meta: string | null; country: string | null; region: string | null; browser: string | null; os: string | null; device: string | null; createdAt: Date }) => ({
           ...e,
           createdAt: e.createdAt.toISOString(),
         })),
