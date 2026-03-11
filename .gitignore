@@ -1,0 +1,42 @@
+# ── Dependencies ───────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ──────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+
+# ── Next.js ────────────────────────────────────────────────────────────────────
+.next/
+*.tsbuildinfo
+
+# ── Turborepo ──────────────────────────────────────────────────────────────────
+.turbo/
+
+# ── Prisma ─────────────────────────────────────────────────────────────────────
+# Keep migration files — they are source of truth for the DB schema
+# but ignore the generated client (regenerated via `prisma generate`)
+!packages/backend/prisma/migrations/
+
+# ── Environment variables ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep examples
+!.env.example
+
+# ── OS & editor ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ── OpenCode internal ──────────────────────────────────────────────────────────
+.opencode/

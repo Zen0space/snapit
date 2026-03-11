@@ -1,0 +1,55 @@
+name: CI — Admin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/admin/**"
+      - "packages/types/**"
+      - "packages/backend/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/ci-admin.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/admin/**"
+      - "packages/types/**"
+      - "packages/backend/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/ci-admin.yml"
+
+jobs:
+  ci:
+    name: Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        # Admin imports backend types which depend on the Prisma client
+        run: pnpm --filter @snap-it/backend db:generate
+
+      - name: Typecheck
+        run: pnpm --filter @snap-it/admin typecheck
+
+      - name: Lint
+        run: pnpm --filter @snap-it/admin lint
+
+      - name: Build
+        run: pnpm --filter @snap-it/admin build

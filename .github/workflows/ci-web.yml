@@ -1,0 +1,49 @@
+name: CI — Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/types/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/ci-web.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/types/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/ci-web.yml"
+
+jobs:
+  ci:
+    name: Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --filter @snap-it/web typecheck
+
+      - name: Lint
+        run: pnpm --filter @snap-it/web lint
+
+      - name: Build
+        run: pnpm --filter @snap-it/web build
