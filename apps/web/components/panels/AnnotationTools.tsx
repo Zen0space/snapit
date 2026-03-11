@@ -1,7 +1,6 @@
 "use client";
 
 import { useEditorStore } from "@/store/editorStore";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { PanelSection } from "@/components/ui/PanelSection";
 import type { ActiveTool } from "@snap-it/types";
 
@@ -80,13 +79,9 @@ const TOOLS: ToolButton[] = [
 
 export default function AnnotationTools() {
   const { activeTool, setActiveTool, hasImage } = useEditorStore();
-  const { logEvent } = useAnalytics();
 
   const handleTool = (tool: ActiveTool) => {
     setActiveTool(tool);
-    if (tool !== "select") {
-      logEvent("tool_used", { tool });
-    }
   };
 
   return (
