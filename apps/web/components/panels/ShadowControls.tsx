@@ -30,20 +30,24 @@ function Slider({
   onChange: (v: number) => void
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-white/50 w-20 flex-shrink-0">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-sky-400"
-      />
-      <span className="text-xs font-mono text-white/40 w-10 text-right">
-        {value}{unit}
-      </span>
+    <div className="w-full px-3 py-2.5 rounded-lg overflow-visible">
+      <div className="flex items-center gap-2 overflow-visible">
+        <span className="text-xs text-white/50 flex-shrink-0 w-[70px]">
+          {label}
+        </span>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="flex-1 min-w-0 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-sky-400"
+        />
+        <span className="text-xs font-mono text-white/70 flex-shrink-0 w-[42px] text-right">
+          {value}{unit}
+        </span>
+      </div>
     </div>
   )
 }
@@ -84,7 +88,7 @@ export default function ShadowControls() {
         </div>
 
         {shadow.enabled && (
-          <div className="space-y-2.5">
+          <div className="w-full space-y-1.5">
             <Slider label="Blur" value={shadow.blur} min={0} max={80} onChange={(v) => setShadow({ blur: v })} unit="px" />
             <Slider label="Offset Y" value={shadow.offsetY} min={-40} max={40} onChange={(v) => setShadow({ offsetY: v })} unit="px" />
             <Slider label="Offset X" value={shadow.offsetX} min={-40} max={40} onChange={(v) => setShadow({ offsetX: v })} unit="px" />
@@ -93,7 +97,7 @@ export default function ShadowControls() {
       </PanelSection>
 
       <PanelSection title="Appearance">
-        <div className="space-y-2.5">
+        <div className="w-full space-y-1.5">
           <Slider
             label="Image corners"
             value={cornerRadius}

@@ -6,7 +6,7 @@ import type { ActiveTool } from '@snap-it/types'
 
 function PanelSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="px-4 py-3 border-b border-white/5">
+    <div className="px-5 py-3 border-b border-white/5">
       <p className="text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-3">{title}</p>
       {children}
     </div>
