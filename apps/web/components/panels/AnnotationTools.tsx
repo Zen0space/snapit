@@ -10,6 +10,7 @@ interface ToolButton {
   label: string;
   description: string;
   icon: React.ReactNode;
+  comingSoon?: boolean;
 }
 
 const TOOLS: ToolButton[] = [
@@ -37,6 +38,7 @@ const TOOLS: ToolButton[] = [
     tool: "text",
     label: "Text",
     description: "Add text annotations",
+    comingSoon: true,
     icon: (
       <svg
         className="w-4 h-4"
@@ -57,6 +59,7 @@ const TOOLS: ToolButton[] = [
     tool: "blur",
     label: "Blur / Redact",
     description: "Hide sensitive info",
+    comingSoon: true,
     icon: (
       <svg
         className="w-4 h-4"
@@ -89,11 +92,11 @@ export default function AnnotationTools() {
   return (
     <PanelSection title="Tools">
       <div className="space-y-1">
-        {TOOLS.map(({ tool, label, description, icon }) => (
+        {TOOLS.map(({ tool, label, description, icon, comingSoon }) => (
           <button
             key={tool}
             onClick={() => handleTool(tool)}
-            disabled={!hasImage && tool !== "select"}
+            disabled={(!hasImage && tool !== "select") || comingSoon}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
               activeTool === tool
                 ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
@@ -104,6 +107,11 @@ export default function AnnotationTools() {
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
                 <span className="font-medium leading-none">{label}</span>
+                {comingSoon && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+                    COMING SOON
+                  </span>
+                )}
               </div>
               <div className="text-[11px] opacity-50 mt-0.5">{description}</div>
             </div>
@@ -111,15 +119,9 @@ export default function AnnotationTools() {
         ))}
       </div>
 
-      {hasImage && activeTool === "text" && (
+      {hasImage && activeTool === "select" && (
         <p className="mt-3 text-[11px] text-white/30 leading-relaxed">
-          Click anywhere on the canvas to place a text box. Double-click to
-          edit.
-        </p>
-      )}
-      {hasImage && activeTool === "blur" && (
-        <p className="mt-3 text-[11px] text-white/30 leading-relaxed">
-          Draw a rectangle over the area you want to blur or redact.
+          Select, move or resize objects on the canvas.
         </p>
       )}
     </PanelSection>
