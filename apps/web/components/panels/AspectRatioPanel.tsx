@@ -2,16 +2,13 @@
 
 import { ASPECT_RATIO_PRESETS, type AspectRatioPreset } from "@/lib/presets";
 import { useEditorStore } from "@/store/editorStore";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { PanelSection } from "@/components/ui/PanelSection";
 
 export default function AspectRatioPanel() {
   const { aspectRatio, setAspectRatio } = useEditorStore();
-  const { logEvent } = useAnalytics();
 
   const handleSelect = (preset: AspectRatioPreset) => {
     setAspectRatio(preset);
-    logEvent("ratio_changed", { meta: preset.id });
   };
 
   return (
