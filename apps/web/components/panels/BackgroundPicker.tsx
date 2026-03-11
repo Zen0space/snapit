@@ -66,7 +66,6 @@ export default function BackgroundPicker() {
                 value: e.target.value,
                 fabricValue: e.target.value,
               })
-              logEvent('bg_changed', { meta: 'custom' })
             }}
             className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent"
           />

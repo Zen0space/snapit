@@ -71,7 +71,19 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
   imageUrlRef.current  = imageDataUrl
 
   // ── Store ─────────────────────────────────────────────────────────────────
-  const { background, shadow, cornerRadius, padding, activeTool, aspectRatio } = useEditorStore()
+  const {
+    background,
+    shadow,
+    cornerRadius,
+    padding,
+    activeTool,
+    aspectRatio,
+    canvasMode,
+    canvasWidth,
+    canvasHeight,
+    canvasVisible,
+    setUploadedImageDimensions
+  } = useEditorStore()
 
   // ── Canvas dimensions ─────────────────────────────────────────────────────
   const getDimensions = useCallback(() => {
@@ -81,6 +93,16 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     const maxW = el.clientWidth  - 48
     const maxH = el.clientHeight - 48
 
+    // Manual mode: use exact dimensions from store
+    if (canvasMode === 'manual') {
+      // Clamp to container size
+      return {
+        width: Math.min(canvasWidth, maxW),
+        height: Math.min(canvasHeight, maxH),
+      }
+    }
+
+    // Ratio mode: calculate from aspect ratio
     if (!aspectRatio.width || !aspectRatio.height) {
       return { width: Math.min(maxW, 900), height: Math.min(maxH, 650) }
     }
@@ -91,7 +113,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     if (h > maxH) { h = maxH; w = h * ratio }
 
     return { width: Math.round(w), height: Math.round(h) }
-  }, [aspectRatio])
+  }, [aspectRatio, canvasMode, canvasWidth, canvasHeight])
 
   // ── Background ────────────────────────────────────────────────────────────
   const applyBackground = useCallback(() => {
@@ -118,26 +140,31 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     const fabric = fabricRef.current
     if (!obj || !fabric) return
 
-    // clipPath is in object-local space (before scale) — use raw width/height
-    obj.clipPath = new fabric.Rect({
-      width: obj.width,
-      height: obj.height,
-      rx: cornerRadius,
-      ry: cornerRadius,
-      originX: 'center',
-      originY: 'center',
+    // Use .set() method - automatically handles cache invalidation in Fabric.js v6
+    obj.set({
+      clipPath: new fabric.Rect({
+        width: obj.width,
+        height: obj.height,
+        rx: cornerRadius,
+        ry: cornerRadius,
+        originX: 'center',
+        originY: 'center',
+      }),
+      shadow: shadow.enabled
+        ? new fabric.Shadow({
+            color:   shadow.color,
+            blur:    shadow.blur,
+            offsetX: shadow.offsetX,
+            offsetY: shadow.offsetY,
+          })
+        : null,
     })
 
-    obj.shadow = shadow.enabled
-      ? new fabric.Shadow({
-          color:   shadow.color,
-          blur:    shadow.blur,
-          offsetX: shadow.offsetX,
-          offsetY: shadow.offsetY,
-        })
-      : null
+    // Update geometry (needed for bounding box calculations)
+    obj.setCoords()
 
-    canvasRef.current?.renderAll()
+    // Render (requestRenderAll uses RAF for better performance)
+    canvasRef.current?.requestRenderAll()
   }, [shadow, cornerRadius])
 
   // ── Load image ────────────────────────────────────────────────────────────
@@ -147,16 +174,18 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
       const fabric = fabricRef.current
       if (!canvas || !fabric) return
 
-      const { padding: pad, shadow: shadowCfg, cornerRadius: cr } =
+      const { shadow: shadowCfg, cornerRadius: cr } =
         useEditorStore.getState()
 
       fabric.FabricImage.fromURL(dataUrl).then((img: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        // Auto-detect image dimensions and update canvas size
+        if (img.width && img.height) {
+          setUploadedImageDimensions(img.width, img.height)
+        }
+
         const { width: cw, height: ch } = canvas
-        const scale = Math.min(
-          (cw - pad * 2) / (img.width  ?? 1),
-          (ch - pad * 2) / (img.height ?? 1),
-          1
-        )
+        // Keep image at 1:1 scale (original size, no resizing)
+        const scale = 1
 
         img.set({ left: cw / 2, top: ch / 2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale })
 
@@ -249,18 +278,16 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
 
     const obj = screenshotRef.current
     if (obj) {
-      const scale = Math.min(
-        (width  - padding * 2) / (obj.width  ?? 1),
-        (height - padding * 2) / (obj.height ?? 1),
-        1
-      )
+      // Keep image at 1:1 scale (original size, no resizing)
+      const scale = 1
       obj.set({ left: width / 2, top: height / 2, scaleX: scale, scaleY: scale })
+      obj.setCoords()
       applyStyle()
     }
 
     applyBackground()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aspectRatio, padding])
+  }, [aspectRatio, padding, canvasMode, canvasWidth, canvasHeight])
 
   // ── Active tool ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -387,9 +414,15 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
         backgroundSize:  '24px 24px',
       }}
     >
-      <div className="rounded-xl overflow-hidden shadow-2xl">
-        <canvas ref={canvasElRef} />
-      </div>
+      {canvasVisible && (
+        <div className="rounded-xl overflow-hidden shadow-2xl">
+          <canvas ref={canvasElRef} />
+        </div>
+      )}
+
+      {!canvasVisible && (
+        <div className="text-white/40 text-sm">Canvas hidden</div>
+      )}
 
       {activeTool !== 'select' && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur text-white/70 text-xs px-3 py-1.5 rounded-full border border-white/10">

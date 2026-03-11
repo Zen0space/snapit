@@ -5,7 +5,7 @@ import { useAnalytics } from '@/hooks/useAnalytics'
 
 function PanelSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="px-4 py-3 border-b border-white/5">
+    <div className="px-5 py-3 border-b border-white/5">
       <p className="text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-3">{title}</p>
       {children}
     </div>
@@ -62,13 +62,13 @@ export default function ShadowControls() {
               setShadow({ enabled: !shadow.enabled })
               logEvent('shadow_toggled', { meta: String(!shadow.enabled) })
             }}
-            className={`w-10 h-5 rounded-full transition-colors relative ${
+            className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
               shadow.enabled ? 'bg-sky-500' : 'bg-white/15'
             }`}
           >
             <span
-              className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                shadow.enabled ? 'translate-x-5' : 'translate-x-0.5'
+              className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                shadow.enabled ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
@@ -90,10 +90,7 @@ export default function ShadowControls() {
             value={cornerRadius}
             min={0}
             max={40}
-            onChange={(v) => {
-              setCornerRadius(v)
-              logEvent('corner_radius_changed', { meta: String(v) })
-            }}
+            onChange={(v) => setCornerRadius(v)}
             unit="px"
           />
           <Slider

@@ -6,7 +6,7 @@ import AnnotationTools from '@/components/panels/AnnotationTools'
 
 export default function RightPanel() {
   return (
-    <aside className="w-56 flex-shrink-0 border-l border-white/10 bg-[#161616] overflow-y-auto">
+    <aside className="w-72 flex-shrink-0 border-l border-white/10 bg-[#161616] overflow-y-auto">
       <BackgroundPicker />
       <ShadowControls />
       <AnnotationTools />
