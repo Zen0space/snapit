@@ -29,6 +29,10 @@ export interface EditorState {
   cornerRadius: number
   setCornerRadius: (v: number) => void
 
+  // Canvas corner radius
+  canvasCornerRadius: number
+  setCanvasCornerRadius: (v: number) => void
+
   // Padding (around screenshot inside canvas)
   padding: number
   setPadding: (v: number) => void
@@ -86,6 +90,10 @@ export const useEditorStore = create<EditorState>((set) => ({
   // Corner radius
   cornerRadius: 12,
   setCornerRadius: (v) => set({ cornerRadius: v }),
+
+  // Canvas corner radius
+  canvasCornerRadius: 12,
+  setCanvasCornerRadius: (v) => set({ canvasCornerRadius: v }),
 
   // Padding
   padding: 10,

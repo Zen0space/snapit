@@ -49,7 +49,16 @@ function Slider({
 }
 
 export default function ShadowControls() {
-  const { shadow, setShadow, cornerRadius, setCornerRadius, padding, setPadding } = useEditorStore()
+  const {
+    shadow,
+    setShadow,
+    cornerRadius,
+    setCornerRadius,
+    canvasCornerRadius,
+    setCanvasCornerRadius,
+    padding,
+    setPadding
+  } = useEditorStore()
   const { logEvent } = useAnalytics()
 
   return (
@@ -86,11 +95,19 @@ export default function ShadowControls() {
       <PanelSection title="Appearance">
         <div className="space-y-2.5">
           <Slider
-            label="Corners"
+            label="Image corners"
             value={cornerRadius}
             min={0}
             max={40}
             onChange={(v) => setCornerRadius(v)}
+            unit="px"
+          />
+          <Slider
+            label="Canvas corners"
+            value={canvasCornerRadius}
+            min={0}
+            max={40}
+            onChange={(v) => setCanvasCornerRadius(v)}
             unit="px"
           />
           <Slider

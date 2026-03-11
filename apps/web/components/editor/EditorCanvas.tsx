@@ -82,6 +82,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     canvasWidth,
     canvasHeight,
     canvasVisible,
+    canvasCornerRadius,
     setUploadedImageDimensions
   } = useEditorStore()
 
@@ -95,22 +96,46 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
 
     // Manual mode: use exact dimensions from store
     if (canvasMode === 'manual') {
-      // Clamp to container size
+      // Apply max size constraint for display (but keep full resolution for export)
+      const MAX_DISPLAY_WIDTH = 1100
+      const MAX_DISPLAY_HEIGHT = 800
+
+      // Calculate scale to fit within viewport while maintaining aspect ratio
+      const viewportScale = Math.min(maxW / canvasWidth, maxH / canvasHeight, 1)
+      let displayWidth = Math.round(canvasWidth * viewportScale)
+      let displayHeight = Math.round(canvasHeight * viewportScale)
+
+      // Apply max display constraints while maintaining aspect ratio
+      if (displayWidth > MAX_DISPLAY_WIDTH || displayHeight > MAX_DISPLAY_HEIGHT) {
+        const scale = Math.min(
+          MAX_DISPLAY_WIDTH / displayWidth,
+          MAX_DISPLAY_HEIGHT / displayHeight
+        )
+        displayWidth = Math.round(displayWidth * scale)
+        displayHeight = Math.round(displayHeight * scale)
+      }
+
       return {
-        width: Math.min(canvasWidth, maxW),
-        height: Math.min(canvasHeight, maxH),
+        width: displayWidth,
+        height: displayHeight,
       }
     }
 
     // Ratio mode: calculate from aspect ratio
     if (!aspectRatio.width || !aspectRatio.height) {
-      return { width: Math.min(maxW, 900), height: Math.min(maxH, 650) }
+      return { width: Math.min(maxW, 1100), height: Math.min(maxH, 800) }
     }
 
     const ratio = aspectRatio.width / aspectRatio.height
-    let w = Math.min(maxW, 900)
+    let w = Math.min(maxW, 1100)
     let h = w / ratio
-    if (h > maxH) { h = maxH; w = h * ratio }
+
+    // Apply max height constraint for ratio mode (especially for tall ratios like 9:16)
+    const MAX_RATIO_HEIGHT = 800
+    if (h > Math.min(maxH, MAX_RATIO_HEIGHT)) {
+      h = Math.min(maxH, MAX_RATIO_HEIGHT)
+      w = h * ratio
+    }
 
     return { width: Math.round(w), height: Math.round(h) }
   }, [aspectRatio, canvasMode, canvasWidth, canvasHeight])
@@ -174,7 +199,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
       const fabric = fabricRef.current
       if (!canvas || !fabric) return
 
-      const { shadow: shadowCfg, cornerRadius: cr } =
+      const { shadow: shadowCfg, cornerRadius: cr, padding: pad, canvasMode, canvasWidth, canvasHeight } =
         useEditorStore.getState()
 
       fabric.FabricImage.fromURL(dataUrl).then((img: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -184,8 +209,21 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
         }
 
         const { width: cw, height: ch } = canvas
-        // Keep image at 1:1 scale (original size, no resizing)
-        const scale = 1
+
+        // Calculate display scale for manual mode (to scale padding proportionally)
+        let displayScale = 1
+        if (canvasMode === 'manual') {
+          displayScale = Math.min(cw / canvasWidth, ch / canvasHeight)
+        }
+
+        // Scale padding for display to ensure even spacing
+        const displayPadding = pad * displayScale
+
+        // Scale image to fit within canvas with scaled padding
+        const scale = Math.min(
+          (cw - displayPadding * 2) / (img.width  ?? 1),
+          (ch - displayPadding * 2) / (img.height ?? 1)
+        )
 
         img.set({ left: cw / 2, top: ch / 2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale })
 
@@ -212,7 +250,7 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
         canvas.renderAll()
       })
     },
-    [applyBackground]
+    [applyBackground, setUploadedImageDimensions]
   )
 
   // ── Init fabric (runs once on mount) ──────────────────────────────────────
@@ -278,8 +316,20 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
 
     const obj = screenshotRef.current
     if (obj) {
-      // Keep image at 1:1 scale (original size, no resizing)
-      const scale = 1
+      // Calculate display scale for manual mode
+      let displayScale = 1
+      if (canvasMode === 'manual') {
+        displayScale = Math.min(width / canvasWidth, height / canvasHeight)
+      }
+
+      // Scale padding for display to ensure even spacing
+      const displayPadding = padding * displayScale
+
+      // Scale image to fit within canvas with scaled padding
+      const scale = Math.min(
+        (width  - displayPadding * 2) / (obj.width  ?? 1),
+        (height - displayPadding * 2) / (obj.height ?? 1)
+      )
       obj.set({ left: width / 2, top: height / 2, scaleX: scale, scaleY: scale })
       obj.setCoords()
       applyStyle()
@@ -396,13 +446,26 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
     onExportReady(() => {
       const canvas = canvasRef.current
       if (!canvas) return
-      const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 })
+
+      // Calculate the scale factor between display size and actual size
+      const displayWidth = canvas.width
+      const displayHeight = canvas.height
+      const actualWidth = canvasMode === 'manual' ? canvasWidth : displayWidth
+      const actualHeight = canvasMode === 'manual' ? canvasHeight : displayHeight
+
+      const multiplier = Math.max(actualWidth / displayWidth, actualHeight / displayHeight)
+
+      // Export at full resolution
+      const dataUrl = canvas.toDataURL({
+        format: 'png',
+        multiplier: multiplier
+      })
       const a = document.createElement('a')
       a.href     = dataUrl
       a.download = 'snap-it.png'
       a.click()
     })
-  }, [onExportReady])
+  }, [onExportReady, canvasMode, canvasWidth, canvasHeight])
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -415,8 +478,52 @@ export default function EditorCanvas({ imageDataUrl, onExportReady }: EditorCanv
       }}
     >
       {canvasVisible && (
-        <div className="rounded-xl overflow-hidden shadow-2xl">
-          <canvas ref={canvasElRef} />
+        <div className="relative pt-12">
+          {/* Edit button positioned above canvas */}
+          <button
+            onClick={() => {
+              const input = document.createElement('input')
+              input.type = 'file'
+              input.accept = 'image/*'
+              input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0]
+                if (file) {
+                  const reader = new FileReader()
+                  reader.onload = (event) => {
+                    const dataUrl = event.target?.result as string
+                    if (dataUrl) {
+                      loadImage(dataUrl)
+                    }
+                  }
+                  reader.readAsDataURL(file)
+                }
+              }
+              input.click()
+            }}
+            className="absolute top-0 right-0 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg text-xs text-white/80 hover:text-white transition-colors backdrop-blur-sm"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+            Edit Image
+          </button>
+
+          <div
+            className="overflow-hidden shadow-2xl"
+            style={{ borderRadius: `${canvasCornerRadius}px` }}
+          >
+            <canvas ref={canvasElRef} />
+          </div>
         </div>
       )}
 
