@@ -34,8 +34,8 @@ RUN ls -la dist/
 FROM base AS runner
 ENV NODE_ENV=production
 
-# Install netcat for database health check
-RUN apk add --no-cache netcat-openbsd
+# Install netcat for database health check and OpenSSL for Prisma
+RUN apk add --no-cache netcat-openbsd openssl openssl-dev
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
