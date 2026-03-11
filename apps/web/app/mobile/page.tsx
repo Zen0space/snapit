@@ -32,7 +32,7 @@ export default function MobilePage() {
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-white">Mobile Apps Coming Soon</h2>
             <p className="text-white/50">
-              We're working on native apps for iOS and Android
+              We&apos;re working on native apps for iOS and Android
             </p>
           </div>
 
