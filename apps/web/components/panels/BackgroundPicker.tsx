@@ -1,26 +1,19 @@
-'use client'
+"use client";
 
-import { BACKGROUND_PRESETS, type BackgroundPreset } from '@/lib/presets'
-import { useEditorStore } from '@/store/editorStore'
-import { useAnalytics } from '@/hooks/useAnalytics'
-
-function PanelSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="px-5 py-3 border-b border-white/5">
-      <p className="text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-3">{title}</p>
-      {children}
-    </div>
-  )
-}
+import { BACKGROUND_PRESETS, type BackgroundPreset } from "@/lib/presets";
+import { useEditorStore } from "@/store/editorStore";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { PanelSection } from "@/components/ui/PanelSection";
 
 export default function BackgroundPicker() {
-  const { background, setBackground, customBgColor, setCustomBgColor } = useEditorStore()
-  const { logEvent } = useAnalytics()
+  const { background, setBackground, customBgColor, setCustomBgColor } =
+    useEditorStore();
+  const { logEvent } = useAnalytics();
 
   const handleSelect = (preset: BackgroundPreset) => {
-    setBackground(preset)
-    logEvent('bg_changed', { meta: preset.id })
-  }
+    setBackground(preset);
+    logEvent("bg_changed", { meta: preset.id });
+  };
 
   return (
     <PanelSection title="Background">
@@ -32,12 +25,15 @@ export default function BackgroundPicker() {
             onClick={() => handleSelect(preset)}
             className={`w-full aspect-square rounded-lg border-2 transition-all relative overflow-hidden ${
               background.id === preset.id
-                ? 'border-sky-400 scale-95 shadow-lg shadow-sky-500/20'
-                : 'border-transparent hover:border-white/20'
+                ? "border-sky-400 scale-95 shadow-lg shadow-sky-500/20"
+                : "border-transparent hover:border-white/20"
             }`}
             style={
-              preset.value === 'transparent'
-                ? { background: 'repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 0 0 / 10px 10px' }
+              preset.value === "transparent"
+                ? {
+                    background:
+                      "repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 0 0 / 10px 10px",
+                  }
                 : { background: preset.value }
             }
           >
@@ -58,20 +54,22 @@ export default function BackgroundPicker() {
             type="color"
             value={customBgColor}
             onChange={(e) => {
-              setCustomBgColor(e.target.value)
+              setCustomBgColor(e.target.value);
               setBackground({
-                id: 'custom',
-                label: 'Custom',
-                type: 'solid',
+                id: "custom",
+                label: "Custom",
+                type: "solid",
                 value: e.target.value,
                 fabricValue: e.target.value,
-              })
+              });
             }}
             className="w-7 h-7 rounded cursor-pointer border-0 bg-transparent"
           />
-          <span className="text-xs font-mono text-white/40">{customBgColor}</span>
+          <span className="text-xs font-mono text-white/40">
+            {customBgColor}
+          </span>
         </div>
       </div>
     </PanelSection>
-  )
+  );
 }
