@@ -1,5 +1,5 @@
-import { createTRPCProxyClient, httpBatchLink } from '@trpc/client'
-import type { AppRouter } from '@snap-it/backend/src/router'
+import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
+import type { AppRouter } from "@snap-it/backend/src/router";
 
 /**
  * Singleton tRPC proxy client — industry standard pattern.
@@ -9,7 +9,15 @@ import type { AppRouter } from '@snap-it/backend/src/router'
 export const trpc = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'}/trpc`,
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001"}/trpc`,
+      fetch(url, options) {
+        return fetch(url, options).catch((err) => {
+          // Silently swallow network errors — backend being unreachable
+          // must never break the editor
+          console.warn("[trpc] network error:", err);
+          throw err;
+        });
+      },
     }),
   ],
-})
+});

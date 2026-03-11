@@ -1,26 +1,18 @@
-'use client'
+"use client";
 
-import { ASPECT_RATIO_PRESETS, type AspectRatioPreset } from '@/lib/presets'
-import { useEditorStore } from '@/store/editorStore'
-import { useAnalytics } from '@/hooks/useAnalytics'
-
-function PanelSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="px-4 py-3 border-b border-white/5">
-      <p className="text-[11px] font-semibold text-white/40 uppercase tracking-widest mb-3">{title}</p>
-      {children}
-    </div>
-  )
-}
+import { ASPECT_RATIO_PRESETS, type AspectRatioPreset } from "@/lib/presets";
+import { useEditorStore } from "@/store/editorStore";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { PanelSection } from "@/components/ui/PanelSection";
 
 export default function AspectRatioPanel() {
-  const { aspectRatio, setAspectRatio } = useEditorStore()
-  const { logEvent } = useAnalytics()
+  const { aspectRatio, setAspectRatio } = useEditorStore();
+  const { logEvent } = useAnalytics();
 
   const handleSelect = (preset: AspectRatioPreset) => {
-    setAspectRatio(preset)
-    logEvent('ratio_changed', { meta: preset.id })
-  }
+    setAspectRatio(preset);
+    logEvent("ratio_changed", { meta: preset.id });
+  };
 
   return (
     <PanelSection title="Canvas Ratio">
@@ -31,8 +23,8 @@ export default function AspectRatioPanel() {
             onClick={() => handleSelect(preset)}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
               aspectRatio.id === preset.id
-                ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                : 'hover:bg-white/5 text-white/70 border border-transparent'
+                ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
+                : "hover:bg-white/5 text-white/70 border border-transparent"
             }`}
           >
             <span className="font-medium">{preset.label}</span>
@@ -41,5 +33,5 @@ export default function AspectRatioPanel() {
         ))}
       </div>
     </PanelSection>
-  )
+  );
 }
