@@ -34,12 +34,6 @@ export default function HomePage() {
     [setHasImage],
   );
 
-  const handleReset = useCallback(() => {
-    setImageDataUrl(null);
-    setHasImage(false);
-    setIsSheetOpen(false);
-  }, [setHasImage]);
-
   const handleExport = useCallback(() => {
     exportFnRef.current?.();
   }, []);
@@ -50,7 +44,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Toolbar onExport={handleExport} onReset={handleReset} />
+      <Toolbar onExport={handleExport} />
 
       <div className="flex flex-1 overflow-hidden">
         <LeftPanel />

@@ -1,14 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEditorStore } from "@/store/editorStore";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface ToolbarProps {
   onExport: () => void;
-  onReset: () => void;
 }
 
-export default function Toolbar({ onExport, onReset }: ToolbarProps) {
+export default function Toolbar({ onExport }: ToolbarProps) {
   const { hasImage } = useEditorStore();
   const { logEvent } = useAnalytics();
 
@@ -41,36 +41,19 @@ export default function Toolbar({ onExport, onReset }: ToolbarProps) {
             />
           </svg>
         </div>
-        <span className="font-semibold text-white tracking-tight hidden sm:inline">
-          Snap-It
-        </span>
+        <span className="font-semibold text-white tracking-tight">Snap-It</span>
         <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded font-mono hidden sm:inline">
           BETA
         </span>
       </div>
 
       <div className="flex items-center gap-2">
-        {hasImage && (
-          <button
-            onClick={onReset}
-            className="px-2 sm:px-3 py-1.5 text-sm text-white/50 hover:text-white/80 transition-colors rounded-lg hover:bg-white/5"
-          >
-            <span className="hidden sm:inline">New image</span>
-            <svg
-              className="w-4 h-4 sm:hidden"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
-        )}
+        <Link
+          href="/changelog"
+          className="text-xs font-medium bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent hover:from-pink-300 hover:to-purple-300 transition-all"
+        >
+          Changelog
+        </Link>
 
         <button
           onClick={handleExport}
