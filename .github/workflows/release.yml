@@ -46,9 +46,12 @@ jobs:
       - name: Get tag message
         id: tag_message
         run: |
-          TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ steps.get_version.outputs.VERSION }})
+          TAG_MSG=$(git for-each-ref --format='%(contents)' refs/tags/${{ steps.get_version.outputs.VERSION }})
+          if [ -z "$TAG_MSG" ]; then
+            TAG_MSG="Release ${{ steps.get_version.outputs.VERSION }}"
+          fi
           echo "MESSAGE<<EOF" >> $GITHUB_OUTPUT
-          echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+          echo "$TAG_MSG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
