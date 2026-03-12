@@ -165,6 +165,7 @@ export default function EditorCanvas({
   useEffect(() => {
     onExportReady(() => {
       const canvas = canvasRef.current;
+      const img = screenshotRef.current;
       if (!canvas) return;
 
       const displayWidth = canvas.width;
@@ -174,10 +175,23 @@ export default function EditorCanvas({
       const actualWidth = uploadedImageWidth || canvasWidth || displayWidth;
       const actualHeight =
         uploadedImageHeight || canvasHeight || displayHeight;
-      const multiplier = Math.max(
-        actualWidth / displayWidth,
-        actualHeight / displayHeight,
-      );
+
+      let multiplier = 1;
+
+      // If we have a screenshot image, account for its scaling
+      if (img && img.scaleX && img.scaleY) {
+        const imageScale = Math.min(img.scaleX, img.scaleY);
+        const targetMultiplier = Math.min(
+          actualWidth / (displayWidth * imageScale),
+          actualHeight / (displayHeight * imageScale),
+        );
+        multiplier = Math.max(targetMultiplier, 1); // Never scale down
+      } else {
+        // Fallback: scale based on canvas dimensions only
+        multiplier =
+          Math.min(actualWidth / displayWidth, actualHeight / displayHeight) ||
+          1;
+      }
 
       const dataUrl = canvas.toDataURL({ format: "png", multiplier });
       const a = document.createElement("a");
