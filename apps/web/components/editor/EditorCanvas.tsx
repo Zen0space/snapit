@@ -48,6 +48,8 @@ export default function EditorCanvas({
     canvasHeight,
     aspectRatio,
     padding,
+    uploadedImageWidth,
+    uploadedImageHeight,
   } = useEditorStore();
 
   // ── Composed hooks ─────────────────────────────────────────────────────────
@@ -156,9 +158,11 @@ export default function EditorCanvas({
 
       const displayWidth = canvas.width;
       const displayHeight = canvas.height;
-      const actualWidth = canvasMode === "manual" ? canvasWidth : displayWidth;
+      // Always use original image dimensions for export to maintain quality
+      // Falls back to canvas dimensions if no image is loaded
+      const actualWidth = uploadedImageWidth || canvasWidth || displayWidth;
       const actualHeight =
-        canvasMode === "manual" ? canvasHeight : displayHeight;
+        uploadedImageHeight || canvasHeight || displayHeight;
       const multiplier = Math.max(
         actualWidth / displayWidth,
         actualHeight / displayHeight,
@@ -170,7 +174,14 @@ export default function EditorCanvas({
       a.download = "snap-it.png";
       a.click();
     });
-  }, [onExportReady, canvasMode, canvasWidth, canvasHeight]);
+  }, [
+    onExportReady,
+    canvasMode,
+    canvasWidth,
+    canvasHeight,
+    uploadedImageWidth,
+    uploadedImageHeight,
+  ]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
