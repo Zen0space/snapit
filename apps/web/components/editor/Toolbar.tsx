@@ -50,7 +50,7 @@ export default function Toolbar({ onExport }: ToolbarProps) {
       <div className="flex items-center gap-2">
         <Link
           href="/changelog"
-          className="text-xs text-white/50 hover:text-white/80 transition-colors"
+          className="text-xs font-medium bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent hover:from-pink-300 hover:to-purple-300 transition-all"
         >
           Changelog
         </Link>
