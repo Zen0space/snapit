@@ -6,10 +6,9 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface ToolbarProps {
   onExport: () => void;
-  onReset: () => void;
 }
 
-export default function Toolbar({ onExport, onReset }: ToolbarProps) {
+export default function Toolbar({ onExport }: ToolbarProps) {
   const { hasImage } = useEditorStore();
   const { logEvent } = useAnalytics();
 
@@ -48,36 +47,28 @@ export default function Toolbar({ onExport, onReset }: ToolbarProps) {
         <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded font-mono hidden sm:inline">
           BETA
         </span>
-        <Link
-          href="/changelog"
-          className="text-[11px] text-white/30 hover:text-white/60 transition-colors hidden sm:inline"
-        >
-          Changelog
-        </Link>
       </div>
 
       <div className="flex items-center gap-2">
-        {hasImage && (
-          <button
-            onClick={onReset}
-            className="px-2 sm:px-3 py-1.5 text-sm text-white/50 hover:text-white/80 transition-colors rounded-lg hover:bg-white/5"
+        <Link
+          href="/changelog"
+          className="p-1.5 text-white/50 hover:text-white/80 transition-colors rounded-lg hover:bg-white/5"
+          title="Changelog"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <span className="hidden sm:inline">New image</span>
-            <svg
-              className="w-4 h-4 sm:hidden"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+            />
+          </svg>
+        </Link>
 
         <button
           onClick={handleExport}
