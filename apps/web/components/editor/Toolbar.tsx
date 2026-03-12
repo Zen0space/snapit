@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEditorStore } from "@/store/editorStore";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -47,6 +48,12 @@ export default function Toolbar({ onExport, onReset }: ToolbarProps) {
         <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded font-mono hidden sm:inline">
           BETA
         </span>
+        <Link
+          href="/changelog"
+          className="text-[11px] text-white/30 hover:text-white/60 transition-colors hidden sm:inline"
+        >
+          Changelog
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">
