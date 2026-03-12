@@ -41,9 +41,7 @@ export default function Toolbar({ onExport }: ToolbarProps) {
             />
           </svg>
         </div>
-        <span className="font-semibold text-white tracking-tight hidden sm:inline">
-          Snap-It
-        </span>
+        <span className="font-semibold text-white tracking-tight">Snap-It</span>
         <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded font-mono hidden sm:inline">
           BETA
         </span>
@@ -52,22 +50,9 @@ export default function Toolbar({ onExport }: ToolbarProps) {
       <div className="flex items-center gap-2">
         <Link
           href="/changelog"
-          className="p-1.5 text-white/50 hover:text-white/80 transition-colors rounded-lg hover:bg-white/5"
-          title="Changelog"
+          className="text-xs text-white/50 hover:text-white/80 transition-colors"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-            />
-          </svg>
+          Changelog
         </Link>
 
         <button
