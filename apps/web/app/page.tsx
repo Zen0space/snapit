@@ -24,6 +24,11 @@ export default function HomePage() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const exportFnRef = useRef<(() => void) | null>(null);
+  const alignmentFnsRef = useRef<{
+    centerHorizontal: () => void;
+    centerVertical: () => void;
+    centerBoth: () => void;
+  } | null>(null);
   const { hasImage, setHasImage } = useEditorStore();
 
   const handleImage = useCallback(
@@ -42,12 +47,23 @@ export default function HomePage() {
     exportFnRef.current = fn;
   }, []);
 
+  const handleAlignmentReady = useCallback(
+    (fns: {
+      centerHorizontal: () => void;
+      centerVertical: () => void;
+      centerBoth: () => void;
+    }) => {
+      alignmentFnsRef.current = fns;
+    },
+    [],
+  );
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Toolbar onExport={handleExport} />
 
       <div className="flex flex-1 overflow-hidden">
-        <LeftPanel />
+        <LeftPanel alignmentFunctions={alignmentFnsRef.current} />
 
         <main
           className="flex-1 flex relative transition-all duration-300 ease-out"
@@ -59,9 +75,69 @@ export default function HomePage() {
         >
           {hasImage && (
             <>
-              <div className="lg:hidden absolute top-3 left-3 z-10">
+              {/* Mobile Controls Row - Ratio + Alignment */}
+              <div className="lg:hidden absolute top-3 left-3 right-3 z-10 flex items-center gap-2">
                 <MobileRatioDropdown />
+
+                {alignmentFnsRef.current && (
+                  <div className="flex gap-1.5 ml-auto">
+                    <button
+                      onClick={alignmentFnsRef.current.centerHorizontal}
+                      className="p-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg transition-colors"
+                      aria-label="Center Horizontal"
+                    >
+                      <svg
+                        className="w-4 h-4 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="12" y1="2" x2="12" y2="22" />
+                        <line x1="4" y1="12" x2="10" y2="12" />
+                        <line x1="14" y1="12" x2="20" y2="12" />
+                      </svg>
+                    </button>
+
+                    <button
+                      onClick={alignmentFnsRef.current.centerVertical}
+                      className="p-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg transition-colors"
+                      aria-label="Center Vertical"
+                    >
+                      <svg
+                        className="w-4 h-4 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <line x1="12" y1="4" x2="12" y2="10" />
+                        <line x1="12" y1="14" x2="12" y2="20" />
+                      </svg>
+                    </button>
+
+                    <button
+                      onClick={alignmentFnsRef.current.centerBoth}
+                      className="p-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg transition-colors"
+                      aria-label="Center Both"
+                    >
+                      <svg
+                        className="w-4 h-4 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="16" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
+
               <MobileEditButton
                 onClick={() => setIsSheetOpen(true)}
                 isOpen={isSheetOpen}
@@ -72,6 +148,7 @@ export default function HomePage() {
             <EditorCanvas
               imageDataUrl={imageDataUrl}
               onExportReady={handleExportReady}
+              onAlignmentReady={handleAlignmentReady}
             />
           ) : (
             <DropZone onImage={handleImage} />

@@ -5,15 +5,22 @@ import { useEditorStore } from "@/store/editorStore";
 import { useCanvasDimensions, type CanvasRefs } from "@/hooks/useCanvasCore";
 import { useCanvasStyle, useCanvasImage } from "@/hooks/useCanvasStyle";
 import { useCanvasTools } from "@/hooks/useCanvasTools";
+import { useImageAlignment } from "@/hooks/useImageAlignment";
 
 interface EditorCanvasProps {
   imageDataUrl: string | null;
   onExportReady: (exportFn: () => void) => void;
+  onAlignmentReady?: (fns: {
+    centerHorizontal: () => void;
+    centerVertical: () => void;
+    centerBoth: () => void;
+  }) => void;
 }
 
 export default function EditorCanvas({
   imageDataUrl,
   onExportReady,
+  onAlignmentReady,
 }: EditorCanvasProps) {
   // ── Refs ──────────────────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,6 +63,10 @@ export default function EditorCanvas({
   const { getDimensions } = useCanvasDimensions({ containerRef });
   const { applyBackground, applyStyle } = useCanvasStyle({ refs });
   const { loadImage } = useCanvasImage({ refs, applyBackground });
+  const { centerHorizontal, centerVertical, centerBoth } = useImageAlignment({
+    canvasRef,
+    screenshotRef,
+  });
   useCanvasTools({ refs });
 
   // ── Init Fabric (runs once on mount) ──────────────────────────────────────
@@ -182,6 +193,11 @@ export default function EditorCanvas({
     uploadedImageWidth,
     uploadedImageHeight,
   ]);
+
+  // ── Alignment ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    onAlignmentReady?.({ centerHorizontal, centerVertical, centerBoth });
+  }, [onAlignmentReady, centerHorizontal, centerVertical, centerBoth]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (

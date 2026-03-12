@@ -19,6 +19,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch tags with annotations
+        run: git fetch --tags --force
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -46,7 +49,7 @@ jobs:
       - name: Get tag message
         id: tag_message
         run: |
-          TAG_MSG=$(git for-each-ref --format='%(contents)' refs/tags/${{ steps.get_version.outputs.VERSION }})
+          TAG_MSG=$(git tag -l --format='%(contents)' ${{ steps.get_version.outputs.VERSION }})
           if [ -z "$TAG_MSG" ]; then
             TAG_MSG="Release ${{ steps.get_version.outputs.VERSION }}"
           fi
