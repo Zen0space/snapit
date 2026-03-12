@@ -7,6 +7,8 @@ import LeftPanel from "@/components/editor/LeftPanel";
 import RightPanel from "@/components/editor/RightPanel";
 import DropZone from "@/components/editor/DropZone";
 import MobileRatioDropdown from "@/components/editor/MobileRatioDropdown";
+import MobileBottomSheet from "@/components/editor/MobileBottomSheet";
+import MobileEditButton from "@/components/editor/MobileEditButton";
 import { useEditorStore } from "@/store/editorStore";
 
 const EditorCanvas = dynamic(() => import("@/components/editor/EditorCanvas"), {
@@ -20,6 +22,7 @@ const EditorCanvas = dynamic(() => import("@/components/editor/EditorCanvas"), {
 
 export default function HomePage() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const exportFnRef = useRef<(() => void) | null>(null);
   const { hasImage, setHasImage } = useEditorStore();
 
@@ -34,6 +37,7 @@ export default function HomePage() {
   const handleReset = useCallback(() => {
     setImageDataUrl(null);
     setHasImage(false);
+    setIsSheetOpen(false);
   }, [setHasImage]);
 
   const handleExport = useCallback(() => {
@@ -51,27 +55,42 @@ export default function HomePage() {
       <div className="flex flex-1 overflow-hidden">
         <LeftPanel />
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main
+          className="flex-1 flex relative transition-all duration-300 ease-out"
+          style={{
+            height: isSheetOpen ? "calc(100% - 40vh)" : "100%",
+            overflow: isSheetOpen ? "auto" : "hidden",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           {hasImage && (
-            <div className="lg:hidden px-3 py-2 border-b border-white/10 bg-[#0f0f0f]">
-              <MobileRatioDropdown />
-            </div>
-          )}
-
-          <div className="flex-1 flex overflow-hidden">
-            {imageDataUrl ? (
-              <EditorCanvas
-                imageDataUrl={imageDataUrl}
-                onExportReady={handleExportReady}
+            <>
+              <div className="lg:hidden absolute top-3 left-3 z-10">
+                <MobileRatioDropdown />
+              </div>
+              <MobileEditButton
+                onClick={() => setIsSheetOpen(true)}
+                isOpen={isSheetOpen}
               />
-            ) : (
-              <DropZone onImage={handleImage} />
-            )}
-          </div>
+            </>
+          )}
+          {imageDataUrl ? (
+            <EditorCanvas
+              imageDataUrl={imageDataUrl}
+              onExportReady={handleExportReady}
+            />
+          ) : (
+            <DropZone onImage={handleImage} />
+          )}
         </main>
 
         <RightPanel />
       </div>
+
+      <MobileBottomSheet
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+      />
     </div>
   );
 }
