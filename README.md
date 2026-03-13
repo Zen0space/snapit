@@ -9,7 +9,7 @@ apps/
   web/     → Next.js editor (port 3000) — deploy to Vercel
   admin/   → Next.js admin panel (port 3002) — deploy to Vercel
 packages/
-  backend/ → Express + tRPC + Prisma (port 3001) — deploy to VPS
+  backend/ → Express + tRPC + Prisma (port 3001 local / 9000 docker) — deploy to VPS
   types/   → Shared TypeScript types
 ```
 
@@ -75,6 +75,9 @@ pnpm dev
 # backend → http://localhost:3001
 ```
 
+> **Port note:** Local development uses port **3001** (set via `PORT=3001` in `packages/backend/.env`).
+> Docker production (`docker-compose.prod.yml`) uses port **9000** — hardcoded and not configurable via env var to prevent accidental misconfiguration.
+
 Or run individually:
 
 ```bash
@@ -87,11 +90,11 @@ pnpm --filter @snap-it/backend dev
 
 ## Prisma Workflow
 
-| Command | When to use |
-|---|---|
+| Command                                                   | When to use                                             |
+| --------------------------------------------------------- | ------------------------------------------------------- |
 | `pnpm --filter @snap-it/backend db:migrate --name <name>` | Schema changed — creates migration files + applies them |
-| `pnpm --filter @snap-it/backend db:generate` | Regenerate Prisma client without migrating |
-| `pnpm --filter @snap-it/backend db:studio` | Open Prisma Studio GUI at `localhost:5555` |
+| `pnpm --filter @snap-it/backend db:generate`              | Regenerate Prisma client without migrating              |
+| `pnpm --filter @snap-it/backend db:studio`                | Open Prisma Studio GUI at `localhost:5555`              |
 
 > **Never** use `prisma db push` in this project — it skips migration files and is not safe for tracked schemas.
 
@@ -140,13 +143,14 @@ DATABASE_URL="..." pnpm --filter @snap-it/backend exec prisma migrate deploy
 pm2 start packages/backend/dist/index.js --name snap-it-backend
 ```
 
-Set up nginx to reverse-proxy port 3001 to your domain.
+Set up nginx to reverse-proxy port 9000 to your domain.
 
 ---
 
 ## Features
 
 **Web editor (`apps/web`)**
+
 - Drag & drop / paste from clipboard (`⌘V`)
 - 12 background gradient presets + custom color picker
 - Rounded corners + drop shadow with blur/offset controls
@@ -156,11 +160,13 @@ Set up nginx to reverse-proxy port 3001 to your domain.
 - Export as PNG at 2× resolution
 
 **Admin panel (`apps/admin`)**
+
 - Password-protected login (env var, httpOnly cookie, 7-day session)
 - Dashboard: stat cards, 30-day events line chart, top countries bar chart, browser/device pie charts
 - Events table with type filter and pagination
 
 **Backend (`packages/backend`)**
+
 - tRPC over Express — end-to-end type-safe API
 - PostgreSQL + Prisma ORM with migration history
 - Offline IP geolocation via `geoip-lite` (no API key required)
