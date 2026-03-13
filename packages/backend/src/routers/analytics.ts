@@ -1,6 +1,7 @@
 import { z } from "zod";
 import geoip from "geoip-lite";
 import { UAParser } from "ua-parser-js";
+import { TRPCError } from "@trpc/server";
 import { prisma } from "../prisma";
 import { router, publicProcedure, adminProcedure } from "../trpc";
 import type { DashboardStats } from "@snap-it/types";
@@ -40,18 +41,24 @@ export const analyticsRouter = router({
       else if (deviceType === "tablet") device = "tablet";
       else device = "desktop";
 
-      await prisma.event.create({
-        data: {
-          type: input.type,
-          tool: input.tool ?? null,
-          meta: input.meta ?? null,
-          country: geo?.country ?? null,
-          region: geo?.region ?? null,
-          browser,
-          os,
-          device,
-        },
-      });
+      try {
+        await prisma.event.create({
+          data: {
+            type: input.type,
+            tool: input.tool ?? null,
+            meta: input.meta ?? null,
+            country: geo?.country ?? null,
+            region: geo?.region ?? null,
+            browser,
+            os,
+            device,
+          },
+        });
+      } catch (error) {
+        // Fire-and-forget — log server-side but don't throw so the web app is unaffected
+        console.error("[analytics] Failed to log event:", error);
+        return { ok: false };
+      }
 
       return { ok: true };
     }),
@@ -66,80 +73,88 @@ export const analyticsRouter = router({
     );
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const [
-      totalExports,
-      totalUploads,
-      totalEvents,
-      exportsToday,
-      countryRows,
-      browserRows,
-      deviceRows,
-      dailyRows,
-    ] = await Promise.all([
-      prisma.event.count({ where: { type: "exported" } }),
-      prisma.event.count({ where: { type: "image_uploaded" } }),
-      prisma.event.count(),
-      prisma.event.count({
-        where: { type: "exported", createdAt: { gte: todayStart } },
-      }),
-      prisma.event.groupBy({
-        by: ["country"],
-        _count: { country: true },
-        where: { country: { not: null } },
-        orderBy: { _count: { country: "desc" } },
-        take: 10,
-      }),
-      prisma.event.groupBy({
-        by: ["browser"],
-        _count: { browser: true },
-        where: { browser: { not: null } },
-        orderBy: { _count: { browser: "desc" } },
-        take: 10,
-      }),
-      prisma.event.groupBy({
-        by: ["device"],
-        _count: { device: true },
-        where: { device: { not: null } },
-        orderBy: { _count: { device: "desc" } },
-        take: 5,
-      }),
-      prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
-        SELECT DATE("createdAt")::text as date, COUNT(*)::bigint as count
-        FROM "Event"
-        WHERE "createdAt" >= ${thirtyDaysAgo}
-        GROUP BY DATE("createdAt")
-        ORDER BY date ASC
-      `,
-    ]);
+    try {
+      const [
+        totalExports,
+        totalUploads,
+        totalEvents,
+        exportsToday,
+        countryRows,
+        browserRows,
+        deviceRows,
+        dailyRows,
+      ] = await Promise.all([
+        prisma.event.count({ where: { type: "exported" } }),
+        prisma.event.count({ where: { type: "image_uploaded" } }),
+        prisma.event.count(),
+        prisma.event.count({
+          where: { type: "exported", createdAt: { gte: todayStart } },
+        }),
+        prisma.event.groupBy({
+          by: ["country"],
+          _count: { country: true },
+          where: { country: { not: null } },
+          orderBy: { _count: { country: "desc" } },
+          take: 10,
+        }),
+        prisma.event.groupBy({
+          by: ["browser"],
+          _count: { browser: true },
+          where: { browser: { not: null } },
+          orderBy: { _count: { browser: "desc" } },
+          take: 10,
+        }),
+        prisma.event.groupBy({
+          by: ["device"],
+          _count: { device: true },
+          where: { device: { not: null } },
+          orderBy: { _count: { device: "desc" } },
+          take: 5,
+        }),
+        prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+          SELECT DATE("createdAt")::text as date, COUNT(*)::bigint as count
+          FROM "Event"
+          WHERE "createdAt" >= ${thirtyDaysAgo}
+          GROUP BY DATE("createdAt")
+          ORDER BY date ASC
+        `,
+      ]);
 
-    return {
-      totalExports,
-      totalUploads,
-      totalEvents,
-      exportsToday,
-      topCountries: countryRows.map(
-        (r: { country: string | null; _count: { country: number } }) => ({
-          country: r.country ?? "Unknown",
-          count: r._count.country,
-        }),
-      ),
-      topBrowsers: browserRows.map(
-        (r: { browser: string | null; _count: { browser: number } }) => ({
-          browser: r.browser ?? "Unknown",
-          count: r._count.browser,
-        }),
-      ),
-      topDevices: deviceRows.map(
-        (r: { device: string | null; _count: { device: number } }) => ({
-          device: r.device ?? "Unknown",
-          count: r._count.device,
-        }),
-      ),
-      eventsOverTime: dailyRows.map((r: { date: string; count: bigint }) => ({
-        date: r.date,
-        count: Number(r.count),
-      })),
-    };
+      return {
+        totalExports,
+        totalUploads,
+        totalEvents,
+        exportsToday,
+        topCountries: countryRows.map(
+          (r: { country: string | null; _count: { country: number } }) => ({
+            country: r.country ?? "Unknown",
+            count: r._count.country,
+          }),
+        ),
+        topBrowsers: browserRows.map(
+          (r: { browser: string | null; _count: { browser: number } }) => ({
+            browser: r.browser ?? "Unknown",
+            count: r._count.browser,
+          }),
+        ),
+        topDevices: deviceRows.map(
+          (r: { device: string | null; _count: { device: number } }) => ({
+            device: r.device ?? "Unknown",
+            count: r._count.device,
+          }),
+        ),
+        eventsOverTime: dailyRows.map((r: { date: string; count: bigint }) => ({
+          date: r.date,
+          count: Number(r.count),
+        })),
+      };
+    } catch (error) {
+      console.error("[analytics] Failed to fetch stats:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch stats",
+      });
+    }
   }),
 
   // Admin — recent events table
@@ -155,36 +170,44 @@ export const analyticsRouter = router({
       const skip = (input.page - 1) * input.limit;
       const where = input.type ? { type: input.type } : {};
 
-      const [events, total] = await Promise.all([
-        prisma.event.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          skip,
-          take: input.limit,
-        }),
-        prisma.event.count({ where }),
-      ]);
-
-      return {
-        events: events.map(
-          (e: {
-            id: string;
-            type: string;
-            tool: string | null;
-            meta: string | null;
-            country: string | null;
-            region: string | null;
-            browser: string | null;
-            os: string | null;
-            device: string | null;
-            createdAt: Date;
-          }) => ({
-            ...e,
-            createdAt: e.createdAt.toISOString(),
+      try {
+        const [events, total] = await Promise.all([
+          prisma.event.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: input.limit,
           }),
-        ),
-        total,
-        pages: Math.ceil(total / input.limit),
-      };
+          prisma.event.count({ where }),
+        ]);
+
+        return {
+          events: events.map(
+            (e: {
+              id: string;
+              type: string;
+              tool: string | null;
+              meta: string | null;
+              country: string | null;
+              region: string | null;
+              browser: string | null;
+              os: string | null;
+              device: string | null;
+              createdAt: Date;
+            }) => ({
+              ...e,
+              createdAt: e.createdAt.toISOString(),
+            }),
+          ),
+          total,
+          pages: Math.ceil(total / input.limit),
+        };
+      } catch (error) {
+        console.error("[analytics] Failed to fetch recent events:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch events",
+        });
+      }
     }),
 });
