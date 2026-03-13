@@ -13,6 +13,32 @@ const EventTypeSchema = z.enum([
   "shadow_toggled",
 ]);
 
+/**
+ * Returns true only for non-empty, non-loopback, non-private IPs.
+ * Skips the geoip lookup entirely for local/internal addresses that
+ * will never resolve to a geographic location.
+ */
+function isValidPublicIP(ip: string): boolean {
+  if (!ip) return false;
+
+  // Loopback
+  if (ip === "127.0.0.1" || ip === "::1") return false;
+  if (ip.startsWith("::ffff:127.")) return false;
+
+  // Private ranges: 10.x.x.x, 172.16-31.x.x, 192.168.x.x
+  if (/^10\./.test(ip)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return false;
+  if (/^192\.168\./.test(ip)) return false;
+
+  // IPv4 — four dot-separated octets
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) return true;
+
+  // IPv6 — contains at least one colon
+  if (ip.includes(":")) return true;
+
+  return false;
+}
+
 export const analyticsRouter = router({
   // Public — called by the web app (fire-and-forget)
   logEvent: publicProcedure
@@ -29,7 +55,7 @@ export const analyticsRouter = router({
         ctx.req.socket.remoteAddress ||
         "";
 
-      const geo = geoip.lookup(ip);
+      const geo = isValidPublicIP(ip) ? geoip.lookup(ip) : null;
       const ua = new UAParser(ctx.req.headers["user-agent"]);
       const browser = ua.getBrowser().name ?? null;
       const os = ua.getOS().name ?? null;

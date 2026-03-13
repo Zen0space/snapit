@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createAdminTrpc } from "@/lib/trpc";
 import EventsClient from "./EventsClient";
 import AdminLayout from "@/components/AdminLayout";
@@ -29,7 +30,11 @@ export default async function EventsPage({
   // this env var is only available in server-side code (no NEXT_PUBLIC_ prefix).
   const password = process.env.ADMIN_PASSWORD ?? "";
 
-  const page = Math.max(1, parseInt(searchParams.page ?? "1"));
+  // z.coerce.number() handles string→number conversion consistently.
+  // .int() rejects decimals, .min(1) rejects zero/negative, .catch(1) silently
+  // falls back to page 1 for any invalid input (e.g. ?page=abc) instead of crashing.
+  const pageSchema = z.coerce.number().int().min(1).default(1);
+  const page = pageSchema.catch(1).parse(searchParams.page);
   const type = searchParams.type as EventType | undefined;
 
   let data: { events: AnalyticsEvent[]; total: number; pages: number } | null =
