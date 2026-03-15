@@ -10,6 +10,7 @@ import { useImageAlignment } from "@/hooks/useImageAlignment";
 interface EditorCanvasProps {
   imageDataUrl: string | null;
   onExportReady: (exportFn: () => void) => void;
+  onCopyReady: (copyFn: () => void) => void;
   onAlignmentReady?: (fns: {
     centerHorizontal: () => void;
     centerVertical: () => void;
@@ -20,6 +21,7 @@ interface EditorCanvasProps {
 export default function EditorCanvas({
   imageDataUrl,
   onExportReady,
+  onCopyReady,
   onAlignmentReady,
 }: EditorCanvasProps) {
   // ── Refs ──────────────────────────────────────────────────────────────────
@@ -201,6 +203,55 @@ export default function EditorCanvas({
     });
   }, [
     onExportReady,
+    canvasMode,
+    canvasWidth,
+    canvasHeight,
+    uploadedImageWidth,
+    uploadedImageHeight,
+  ]);
+
+  // ── Copy to Clipboard ──────────────────────────────────────────────────────
+  useEffect(() => {
+    onCopyReady(async () => {
+      const canvas = canvasRef.current;
+      const img = screenshotRef.current;
+      if (!canvas) return;
+
+      const displayWidth = canvas.width;
+      const displayHeight = canvas.height;
+      const actualWidth = uploadedImageWidth || canvasWidth || displayWidth;
+      const actualHeight =
+        uploadedImageHeight || canvasHeight || displayHeight;
+
+      let multiplier = 1;
+
+      // Same multiplier logic as export
+      if (img && img.scaleX && img.scaleY) {
+        const imageScale = Math.min(img.scaleX, img.scaleY);
+        const targetMultiplier = Math.min(
+          actualWidth / (displayWidth * imageScale),
+          actualHeight / (displayHeight * imageScale),
+        );
+        multiplier = Math.max(targetMultiplier, 1);
+      } else {
+        multiplier =
+          Math.min(actualWidth / displayWidth, actualHeight / displayHeight) ||
+          1;
+      }
+
+      const dataUrl = canvas.toDataURL({ format: "png", multiplier });
+
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Copy to clipboard
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blob }),
+      ]);
+    });
+  }, [
+    onCopyReady,
     canvasMode,
     canvasWidth,
     canvasHeight,

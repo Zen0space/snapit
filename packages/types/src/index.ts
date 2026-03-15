@@ -4,6 +4,7 @@ export type EventType =
   | "image_uploaded"
   | "bg_changed"
   | "exported"
+  | "copied"
   | "shadow_toggled";
 
 export type DeviceType = "desktop" | "mobile" | "tablet";
