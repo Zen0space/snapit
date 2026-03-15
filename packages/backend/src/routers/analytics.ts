@@ -10,6 +10,7 @@ const EventTypeSchema = z.enum([
   "image_uploaded",
   "bg_changed",
   "exported",
+  "copied",
   "shadow_toggled",
 ]);
 
