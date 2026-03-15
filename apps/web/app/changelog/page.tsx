@@ -38,11 +38,11 @@ const categoryConfig: Record<
   string,
   { icon: string; color: string; label: string }
 > = {
-  "what's new": { icon: "✨", color: "text-emerald-400", label: "Features" },
+  "whats new": { icon: "✨", color: "text-emerald-400", label: "What's New" },
   features: { icon: "✨", color: "text-emerald-400", label: "Features" },
   "new features": { icon: "✨", color: "text-emerald-400", label: "Features" },
+  fixes: { icon: "🐛", color: "text-red-400", label: "Fixes" },
   "bug fixes": { icon: "🐛", color: "text-red-400", label: "Bug Fixes" },
-  fixes: { icon: "🐛", color: "text-red-400", label: "Bug Fixes" },
   improvements: { icon: "⚡", color: "text-amber-400", label: "Improvements" },
   enhancements: { icon: "⚡", color: "text-amber-400", label: "Improvements" },
   documentation: { icon: "📝", color: "text-blue-400", label: "Documentation" },
@@ -67,8 +67,9 @@ function getCategoryConfig(header: string) {
   // Remove emojis and special characters, then normalize
   const normalized = header
     .toLowerCase()
-    .replace(/[:\-]/g, "")
     .replace(/[\u{1F300}-\u{1F9FF}]/gu, "") // Remove emojis
+    .replace(/[:\-']/g, "") // Remove colons, dashes, and apostrophes
+    .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
   return categoryConfig[normalized] || categoryConfig.default;
 }
