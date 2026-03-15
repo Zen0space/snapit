@@ -67,7 +67,7 @@ function getCategoryConfig(header: string) {
   // Remove emojis and special characters, then normalize
   const normalized = header
     .toLowerCase()
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "") // Remove emojis
+    .replace(/[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]/gu, "") // Remove all emojis
     .replace(/[:\-']/g, "") // Remove colons, dashes, and apostrophes
     .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
