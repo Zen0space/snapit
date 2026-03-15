@@ -3,18 +3,25 @@
 import Link from "next/link";
 import { useEditorStore } from "@/store/editorStore";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import ExportDropdown from "./ExportDropdown";
 
 interface ToolbarProps {
   onExport: () => void;
+  onCopyToClipboard: () => void;
 }
 
-export default function Toolbar({ onExport }: ToolbarProps) {
+export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
   const { hasImage } = useEditorStore();
   const { logEvent } = useAnalytics();
 
   const handleExport = () => {
     onExport();
     logEvent("exported");
+  };
+
+  const handleCopyToClipboard = () => {
+    onCopyToClipboard();
+    logEvent("copied");
   };
 
   return (
@@ -55,27 +62,11 @@ export default function Toolbar({ onExport }: ToolbarProps) {
           Changelog
         </Link>
 
-        <button
-          onClick={handleExport}
+        <ExportDropdown
+          onExport={handleExport}
+          onCopy={handleCopyToClipboard}
           disabled={!hasImage}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-sky-500 hover:bg-sky-400 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
-          <span className="hidden sm:inline">Export PNG</span>
-          <span className="sm:hidden">Export</span>
-        </button>
+        />
       </div>
     </header>
   );

@@ -3,9 +3,9 @@
 import { PanelSection } from "@/components/ui/PanelSection";
 
 interface ImageAlignmentPanelProps {
-  onCenterHorizontal: () => void;
-  onCenterVertical: () => void;
-  onCenterBoth: () => void;
+  onCenterHorizontal?: () => void;
+  onCenterVertical?: () => void;
+  onCenterBoth?: () => void;
 }
 
 export default function ImageAlignmentPanel({
@@ -13,13 +13,19 @@ export default function ImageAlignmentPanel({
   onCenterVertical,
   onCenterBoth,
 }: ImageAlignmentPanelProps) {
+  const hasImage = !!(onCenterHorizontal && onCenterVertical && onCenterBoth);
   return (
     <PanelSection title="Image Alignment">
       <div className="space-y-2">
         {/* Center Horizontal Button */}
         <button
           onClick={onCenterHorizontal}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-white/70 border border-transparent transition-colors"
+          disabled={!hasImage}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
+            hasImage
+              ? "hover:bg-white/5 text-white/70 cursor-pointer"
+              : "text-white/30 cursor-not-allowed opacity-50"
+          }`}
         >
           <svg
             className="w-4 h-4 flex-shrink-0"
@@ -40,7 +46,12 @@ export default function ImageAlignmentPanel({
         {/* Center Vertical Button */}
         <button
           onClick={onCenterVertical}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-white/70 border border-transparent transition-colors"
+          disabled={!hasImage}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
+            hasImage
+              ? "hover:bg-white/5 text-white/70 cursor-pointer"
+              : "text-white/30 cursor-not-allowed opacity-50"
+          }`}
         >
           <svg
             className="w-4 h-4 flex-shrink-0"
@@ -61,7 +72,12 @@ export default function ImageAlignmentPanel({
         {/* Center Both Button */}
         <button
           onClick={onCenterBoth}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-white/5 text-white/70 border border-transparent transition-colors"
+          disabled={!hasImage}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
+            hasImage
+              ? "hover:bg-white/5 text-white/70 cursor-pointer"
+              : "text-white/30 cursor-not-allowed opacity-50"
+          }`}
         >
           <svg
             className="w-4 h-4 flex-shrink-0"

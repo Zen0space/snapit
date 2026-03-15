@@ -24,6 +24,7 @@ export default function HomePage() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const exportFnRef = useRef<(() => void) | null>(null);
+  const copyFnRef = useRef<(() => void) | null>(null);
   const alignmentFnsRef = useRef<{
     centerHorizontal: () => void;
     centerVertical: () => void;
@@ -43,8 +44,16 @@ export default function HomePage() {
     exportFnRef.current?.();
   }, []);
 
+  const handleCopyToClipboard = useCallback(() => {
+    copyFnRef.current?.();
+  }, []);
+
   const handleExportReady = useCallback((fn: () => void) => {
     exportFnRef.current = fn;
+  }, []);
+
+  const handleCopyReady = useCallback((fn: () => void) => {
+    copyFnRef.current = fn;
   }, []);
 
   const handleAlignmentReady = useCallback(
@@ -60,7 +69,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Toolbar onExport={handleExport} />
+      <Toolbar onExport={handleExport} onCopyToClipboard={handleCopyToClipboard} />
 
       <div className="flex flex-1 overflow-hidden">
         <LeftPanel alignmentFunctions={alignmentFnsRef.current} />
@@ -148,6 +157,7 @@ export default function HomePage() {
             <EditorCanvas
               imageDataUrl={imageDataUrl}
               onExportReady={handleExportReady}
+              onCopyReady={handleCopyReady}
               onAlignmentReady={handleAlignmentReady}
             />
           ) : (
