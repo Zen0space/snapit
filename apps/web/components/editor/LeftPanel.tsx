@@ -16,13 +16,11 @@ export default function LeftPanel({ alignmentFunctions }: LeftPanelProps) {
     <aside className="hidden lg:flex w-64 flex-shrink-0 flex-col border-r border-white/10 bg-[#161616] overflow-y-auto">
       <AspectRatioPanel />
 
-      {alignmentFunctions && (
-        <ImageAlignmentPanel
-          onCenterHorizontal={alignmentFunctions.centerHorizontal}
-          onCenterVertical={alignmentFunctions.centerVertical}
-          onCenterBoth={alignmentFunctions.centerBoth}
-        />
-      )}
+      <ImageAlignmentPanel
+        onCenterHorizontal={alignmentFunctions?.centerHorizontal}
+        onCenterVertical={alignmentFunctions?.centerVertical}
+        onCenterBoth={alignmentFunctions?.centerBoth}
+      />
     </aside>
   );
 }
