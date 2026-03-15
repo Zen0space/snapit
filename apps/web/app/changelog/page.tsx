@@ -64,7 +64,12 @@ type Section = {
 };
 
 function getCategoryConfig(header: string) {
-  const normalized = header.toLowerCase().replace(/[:\-]/g, "").trim();
+  // Remove emojis and special characters, then normalize
+  const normalized = header
+    .toLowerCase()
+    .replace(/[:\-]/g, "")
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "") // Remove emojis
+    .trim();
   return categoryConfig[normalized] || categoryConfig.default;
 }
 
