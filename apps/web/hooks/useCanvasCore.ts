@@ -80,7 +80,7 @@ export function useCanvasDimensions(refs: Pick<CanvasRefs, "containerRef">) {
   const getDimensions = useCallback(
     (
       overrides?: Partial<{
-        canvasMode: string;
+        canvasMode: "ratio" | "manual";
         canvasWidth: number;
         canvasHeight: number;
         aspectRatio: AspectRatioPreset;

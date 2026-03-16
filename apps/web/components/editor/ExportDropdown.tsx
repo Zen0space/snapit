@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useClickOutside } from "@/hooks/useClickOutside";
 
 interface ExportDropdownProps {
   onExport: () => void;
@@ -16,18 +17,8 @@ export default function ExportDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const close = useCallback(() => setIsOpen(false), []);
+  useClickOutside(dropdownRef, close);
 
   const handleExport = () => {
     onExport();
@@ -59,8 +50,7 @@ export default function ExportDropdown({
             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
           />
         </svg>
-        <span className="hidden sm:inline">Export</span>
-        <span className="sm:hidden">Export</span>
+        <span>Export</span>
         <svg
           className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"

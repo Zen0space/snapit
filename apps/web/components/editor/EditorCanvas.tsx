@@ -7,6 +7,47 @@ import { useCanvasStyle, useCanvasImage } from "@/hooks/useCanvasStyle";
 import { useCanvasTools } from "@/hooks/useCanvasTools";
 import { useImageAlignment } from "@/hooks/useImageAlignment";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+type FabricImage = InstanceType<typeof import("fabric").FabricImage>;
+type FabricCanvas = InstanceType<typeof import("fabric").Canvas>;
+
+/**
+ * Calculates the export multiplier so the exported PNG is at the original
+ * image resolution rather than the (potentially downscaled) display size.
+ * Always returns at least 1 — never scales down.
+ */
+function calculateExportMultiplier(
+  canvas: FabricCanvas,
+  img: FabricImage | null,
+  uploadedImageWidth: number | null,
+  uploadedImageHeight: number | null,
+  canvasWidth: number,
+  canvasHeight: number,
+): number {
+  const displayWidth = canvas.width;
+  const displayHeight = canvas.height;
+  // Use original image dimensions for export quality; fall back to canvas dims
+  const actualWidth = uploadedImageWidth || canvasWidth || displayWidth;
+  const actualHeight = uploadedImageHeight || canvasHeight || displayHeight;
+
+  if (img && img.scaleX && img.scaleY) {
+    const imageScale = Math.min(img.scaleX, img.scaleY);
+    const targetMultiplier = Math.min(
+      actualWidth / (displayWidth * imageScale),
+      actualHeight / (displayHeight * imageScale),
+    );
+    return Math.max(targetMultiplier, 1); // Never scale down
+  }
+
+  // Fallback: scale based on canvas dimensions only
+  return (
+    Math.min(actualWidth / displayWidth, actualHeight / displayHeight) || 1
+  );
+}
+
 interface EditorCanvasProps {
   imageDataUrl: string | null;
   onExportReady: (exportFn: () => void) => void;
@@ -170,30 +211,14 @@ export default function EditorCanvas({
       const img = screenshotRef.current;
       if (!canvas) return;
 
-      const displayWidth = canvas.width;
-      const displayHeight = canvas.height;
-      // Always use original image dimensions for export to maintain quality
-      // Falls back to canvas dimensions if no image is loaded
-      const actualWidth = uploadedImageWidth || canvasWidth || displayWidth;
-      const actualHeight =
-        uploadedImageHeight || canvasHeight || displayHeight;
-
-      let multiplier = 1;
-
-      // If we have a screenshot image, account for its scaling
-      if (img && img.scaleX && img.scaleY) {
-        const imageScale = Math.min(img.scaleX, img.scaleY);
-        const targetMultiplier = Math.min(
-          actualWidth / (displayWidth * imageScale),
-          actualHeight / (displayHeight * imageScale),
-        );
-        multiplier = Math.max(targetMultiplier, 1); // Never scale down
-      } else {
-        // Fallback: scale based on canvas dimensions only
-        multiplier =
-          Math.min(actualWidth / displayWidth, actualHeight / displayHeight) ||
-          1;
-      }
+      const multiplier = calculateExportMultiplier(
+        canvas,
+        img,
+        uploadedImageWidth,
+        uploadedImageHeight,
+        canvasWidth,
+        canvasHeight,
+      );
 
       const dataUrl = canvas.toDataURL({ format: "png", multiplier });
       const a = document.createElement("a");
@@ -217,27 +242,14 @@ export default function EditorCanvas({
       const img = screenshotRef.current;
       if (!canvas) return;
 
-      const displayWidth = canvas.width;
-      const displayHeight = canvas.height;
-      const actualWidth = uploadedImageWidth || canvasWidth || displayWidth;
-      const actualHeight =
-        uploadedImageHeight || canvasHeight || displayHeight;
-
-      let multiplier = 1;
-
-      // Same multiplier logic as export
-      if (img && img.scaleX && img.scaleY) {
-        const imageScale = Math.min(img.scaleX, img.scaleY);
-        const targetMultiplier = Math.min(
-          actualWidth / (displayWidth * imageScale),
-          actualHeight / (displayHeight * imageScale),
-        );
-        multiplier = Math.max(targetMultiplier, 1);
-      } else {
-        multiplier =
-          Math.min(actualWidth / displayWidth, actualHeight / displayHeight) ||
-          1;
-      }
+      const multiplier = calculateExportMultiplier(
+        canvas,
+        img,
+        uploadedImageWidth,
+        uploadedImageHeight,
+        canvasWidth,
+        canvasHeight,
+      );
 
       const dataUrl = canvas.toDataURL({ format: "png", multiplier });
 
@@ -246,9 +258,16 @@ export default function EditorCanvas({
       const blob = await response.blob();
 
       // Copy to clipboard
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+      } catch (err) {
+        console.warn(
+          "[clipboard] Copy failed — permission denied or unsupported:",
+          err,
+        );
+      }
     });
   }, [
     onCopyReady,

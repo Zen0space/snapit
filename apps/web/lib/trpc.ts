@@ -12,8 +12,8 @@ export const trpc = createTRPCProxyClient<AppRouter>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001"}/trpc`,
       fetch(url, options) {
         return fetch(url, options).catch((err) => {
-          // Silently swallow network errors — backend being unreachable
-          // must never break the editor
+          // Log and re-throw — callers (e.g. useAnalytics) catch individually.
+          // Backend being unreachable must never break the editor.
           console.warn("[trpc] network error:", err);
           throw err;
         });

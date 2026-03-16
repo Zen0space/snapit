@@ -69,7 +69,10 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Toolbar onExport={handleExport} onCopyToClipboard={handleCopyToClipboard} />
+      <Toolbar
+        onExport={handleExport}
+        onCopyToClipboard={handleCopyToClipboard}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <LeftPanel alignmentFunctions={alignmentFnsRef.current} />
@@ -79,7 +82,6 @@ export default function HomePage() {
           style={{
             height: isSheetOpen ? "calc(100% - 40vh)" : "100%",
             overflow: isSheetOpen ? "auto" : "hidden",
-            WebkitOverflowScrolling: "touch",
           }}
         >
           {hasImage && (

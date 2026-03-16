@@ -111,61 +111,65 @@ export function useCanvasImage({ refs, applyBackground }: UseCanvasImageProps) {
         canvasHeight,
       } = useEditorStore.getState();
 
-      fabric.FabricImage.fromURL(dataUrl).then((img: FabricImage) => {
-        if (img.width && img.height) {
-          setUploadedImageDimensions(img.width, img.height);
-        }
+      fabric.FabricImage.fromURL(dataUrl)
+        .then((img: FabricImage) => {
+          if (img.width && img.height) {
+            setUploadedImageDimensions(img.width, img.height);
+          }
 
-        const { width: cw, height: ch } = canvas;
+          const { width: cw, height: ch } = canvas;
 
-        let displayScale = 1;
-        if (canvasMode === "manual") {
-          displayScale = Math.min(cw / canvasWidth, ch / canvasHeight);
-        }
+          let displayScale = 1;
+          if (canvasMode === "manual") {
+            displayScale = Math.min(cw / canvasWidth, ch / canvasHeight);
+          }
 
-        const displayPadding = pad * displayScale;
-        const scale = Math.min(
-          (cw - displayPadding * 2) / (img.width ?? 1),
-          (ch - displayPadding * 2) / (img.height ?? 1),
-        );
+          const displayPadding = pad * displayScale;
+          const scale = Math.min(
+            (cw - displayPadding * 2) / (img.width ?? 1),
+            (ch - displayPadding * 2) / (img.height ?? 1),
+          );
 
-        img.set({
-          left: cw / 2,
-          top: ch / 2,
-          originX: "center",
-          originY: "center",
-          scaleX: scale,
-          scaleY: scale,
-        });
-
-        if (refs.screenshotRef.current)
-          canvas.remove(refs.screenshotRef.current);
-        refs.screenshotRef.current = img;
-
-        canvas.add(img);
-        canvas.sendObjectToBack(img);
-
-        img.clipPath = new fabric.Rect({
-          width: img.width,
-          height: img.height,
-          rx: cr,
-          ry: cr,
-          originX: "center",
-          originY: "center",
-        });
-
-        if (shadowCfg.enabled) {
-          img.shadow = new fabric.Shadow({
-            color: shadowCfg.color,
-            blur: shadowCfg.blur,
-            offsetX: shadowCfg.offsetX,
-            offsetY: shadowCfg.offsetY,
+          img.set({
+            left: cw / 2,
+            top: ch / 2,
+            originX: "center",
+            originY: "center",
+            scaleX: scale,
+            scaleY: scale,
           });
-        }
 
-        applyBackground();
-        canvas.renderAll();
-      });
+          if (refs.screenshotRef.current)
+            canvas.remove(refs.screenshotRef.current);
+          refs.screenshotRef.current = img;
+
+          canvas.add(img);
+          canvas.sendObjectToBack(img);
+
+          img.clipPath = new fabric.Rect({
+            width: img.width,
+            height: img.height,
+            rx: cr,
+            ry: cr,
+            originX: "center",
+            originY: "center",
+          });
+
+          if (shadowCfg.enabled) {
+            img.shadow = new fabric.Shadow({
+              color: shadowCfg.color,
+              blur: shadowCfg.blur,
+              offsetX: shadowCfg.offsetX,
+              offsetY: shadowCfg.offsetY,
+            });
+          }
+
+          applyBackground();
+          canvas.renderAll();
+        })
+        .catch((err) => {
+          console.error("[canvas] Failed to load image:", err);
+        });
     },
     [
       applyBackground,

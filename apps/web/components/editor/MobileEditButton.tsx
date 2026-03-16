@@ -17,9 +17,10 @@ export default function MobileEditButton({
       <div
         className="relative p-[2px] rounded-xl overflow-hidden"
         style={{
-          background: 'linear-gradient(90deg, #00f5ff, #00d4ff, #0099ff, #6b5eff, #b84eff, #ff4e91, #ff4e50, #00f5ff)',
-          backgroundSize: '200% 100%',
-          animation: 'borderAnimation 3s linear infinite',
+          background:
+            "linear-gradient(90deg, #00f5ff, #00d4ff, #0099ff, #6b5eff, #b84eff, #ff4e91, #ff4e50, #00f5ff)",
+          backgroundSize: "200% 100%",
+          animation: "borderAnimation 3s linear infinite",
         }}
       >
         {/* Inner button */}
@@ -49,18 +50,6 @@ export default function MobileEditButton({
           <span className="relative z-10 text-base">Edit</span>
         </button>
       </div>
-
-      {/* Keyframe animation */}
-      <style jsx>{`
-        @keyframes borderAnimation {
-          0% {
-            background-position: 0% 50%;
-          }
-          100% {
-            background-position: 200% 50%;
-          }
-        }
-      `}</style>
     </div>
   );
 }
