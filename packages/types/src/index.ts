@@ -38,8 +38,10 @@ export interface AnalyticsEvent {
 export interface DashboardStats {
   totalExports: number;
   totalUploads: number;
+  totalCopies: number;
   totalEvents: number;
   exportsToday: number;
+  copiesToday: number;
   topCountries: Array<{ country: string; count: number }>;
   topBrowsers: Array<{ browser: string; count: number }>;
   topDevices: Array<{ device: string; count: number }>;

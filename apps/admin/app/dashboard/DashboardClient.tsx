@@ -49,9 +49,11 @@ export default function DashboardClient({ stats }: Props) {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
         <StatCard label="Total Exports" value={stats.totalExports} sub="All time" />
         <StatCard label="Exports Today" value={stats.exportsToday} sub="Since midnight" />
+        <StatCard label="Total Copies" value={stats.totalCopies} sub="All time" />
+        <StatCard label="Copies Today" value={stats.copiesToday} sub="Since midnight" />
         <StatCard label="Total Uploads" value={stats.totalUploads} sub="Images processed" />
         <StatCard label="Total Events" value={stats.totalEvents} sub="All event types" />
       </div>
