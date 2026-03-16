@@ -4,6 +4,7 @@ import cors from "cors";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./router.js";
 import { createContext } from "./trpc.js";
+import { startCleanupScheduler } from "./jobs/cleanup.js";
 
 // Validate critical environment variables before starting
 const REQUIRED_ENV_VARS = ["ADMIN_PASSWORD", "DATABASE_URL"] as const;
@@ -58,4 +59,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Snap-It backend running on http://localhost:${PORT}`);
   console.log(`   tRPC: http://localhost:${PORT}/trpc`);
   console.log(`   Health: http://localhost:${PORT}/health`);
+
+  // Start data-retention cleanup scheduler (3mo general / 12mo core events)
+  startCleanupScheduler();
 });

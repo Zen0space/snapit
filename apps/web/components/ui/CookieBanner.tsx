@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 
 export function CookieBanner() {
@@ -36,13 +37,20 @@ export function CookieBanner() {
         </div>
 
         {/* Body text */}
-        <p className="mb-4 text-xs leading-relaxed text-neutral-400">
+        <p className="mb-3 text-xs leading-relaxed text-neutral-400">
           We use anonymous analytics to understand how Snap-It is used and
           improve the experience. No personal data is sold or shared.{" "}
           <span className="text-neutral-500">
             "Necessary only" limits tracking to uploads &amp; exports.
           </span>
         </p>
+
+        <Link
+          href="/cookie-policy"
+          className="mb-4 inline-block text-xs text-neutral-500 underline-offset-2 hover:text-neutral-300 hover:underline transition-colors"
+        >
+          See our Cookie Policy →
+        </Link>
 
         {/* Divider */}
         <div className="mb-4 h-px bg-white/5" />
