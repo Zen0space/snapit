@@ -45,7 +45,7 @@ export interface DashboardStats {
   topCountries: Array<{ country: string; count: number }>;
   topBrowsers: Array<{ browser: string; count: number }>;
   topDevices: Array<{ device: string; count: number }>;
-  eventsOverTime: Array<{ date: string; count: number }>;
+  eventsOverTime: Array<{ date: string; exports: number; copies: number }>;
 }
 
 /** One record per anonymous visitor — their consent choice + aggregate event count. */
