@@ -64,7 +64,7 @@ export const consentRouter = router({
           ]);
 
           // Fetch per-visitor event counts in one query
-          const visitorIds = rows.map((r) => r.visitorId);
+          const visitorIds = rows.map((r: { visitorId: string }) => r.visitorId);
           const eventCounts = await prisma.event.groupBy({
             by: ["visitorId"],
             _count: { visitorId: true },
@@ -72,11 +72,11 @@ export const consentRouter = router({
           });
 
           const countMap = new Map(
-            eventCounts.map((ec) => [ec.visitorId, ec._count.visitorId]),
+            eventCounts.map((ec: { visitorId: string | null; _count: { visitorId: number } }) => [ec.visitorId, ec._count.visitorId]),
           );
 
           return {
-            records: rows.map((r) => ({
+            records: rows.map((r: { id: string; visitorId: string; consent: string; createdAt: Date; updatedAt: Date }) => ({
               id: r.id,
               visitorId: r.visitorId,
               consent: r.consent as CookieConsentRecord["consent"],
