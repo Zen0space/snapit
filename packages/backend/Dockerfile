@@ -1,5 +1,5 @@
 # Stage 1: Base - Setup pnpm environment
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
@@ -22,10 +22,10 @@ FROM deps AS builder
 # Copy source files
 COPY packages/types ./packages/types
 COPY packages/backend ./packages/backend
-# Generate Prisma client
+# Generate Prisma client into src/generated/prisma
 WORKDIR /app/packages/backend
 RUN pnpm exec prisma generate
-# Build TypeScript to JavaScript
+# Build TypeScript to JavaScript (includes generated client via tsconfig include)
 RUN pnpm build
 # Verify build output
 RUN ls -la dist/
@@ -34,8 +34,8 @@ RUN ls -la dist/
 FROM base AS runner
 ENV NODE_ENV=production
 
-# Install netcat for database health check and OpenSSL for Prisma
-RUN apk add --no-cache netcat-openbsd openssl openssl-dev
+# Install netcat for database health check
+RUN apk add --no-cache netcat-openbsd
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
@@ -49,8 +49,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/packages/backend/dist ./packages/backend/dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/backend/package.json ./packages/backend/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/backend/prisma ./packages/backend/prisma
+COPY --from=builder --chown=nodejs:nodejs /app/packages/backend/prisma.config.ts ./packages/backend/prisma.config.ts
 
-# Copy node_modules (includes Prisma client and dependencies)
+# Copy node_modules (includes adapter-pg and pg)
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/packages/backend/node_modules ./packages/backend/node_modules
 
@@ -71,7 +72,7 @@ EXPOSE 9000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:9000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+  CMD node -e "fetch('http://localhost:9000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Use entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

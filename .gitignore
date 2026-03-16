@@ -17,6 +17,7 @@ out/
 # Keep migration files — they are source of truth for the DB schema
 # but ignore the generated client (regenerated via `prisma generate`)
 !packages/backend/prisma/migrations/
+packages/backend/src/generated/
 
 # ── Environment variables ──────────────────────────────────────────────────────
 .env

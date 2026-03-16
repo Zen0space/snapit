@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { getReleases, GitHubRelease } from "@/lib/github";
+import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "Changelog",
@@ -67,7 +68,10 @@ function getCategoryConfig(header: string) {
   // Remove emojis and special characters, then normalize
   const normalized = header
     .toLowerCase()
-    .replace(/[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]/gu, "") // Remove all emojis
+    .replace(
+      /[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]/gu,
+      "",
+    ) // Remove all emojis
     .replace(/[:\-']/g, "") // Remove colons, dashes, and apostrophes
     .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
@@ -320,10 +324,16 @@ export default async function ChangelogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-900/20 via-transparent to-transparent" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl" />
-      <div className="absolute top-20 right-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-[#0a0a0a] relative">
+      {/* Decorative background blobs — contained so they don't block footer links */}
+      <div
+        className="absolute inset-x-0 top-0 h-screen overflow-hidden pointer-events-none"
+        aria-hidden="true"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-900/20 via-transparent to-transparent" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-20 right-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
+      </div>
 
       <nav className="relative border-b border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -441,14 +451,7 @@ export default async function ChangelogPage() {
         )}
       </main>
 
-      <footer className="relative border-t border-white/[0.05] mt-12">
-        <div className="max-w-3xl mx-auto px-4 py-6 flex items-center justify-between text-xs text-white/30">
-          <span>Snap-It Changelog</span>
-          <Link href="/" className="hover:text-white/50 transition-colors">
-            Back to Editor
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

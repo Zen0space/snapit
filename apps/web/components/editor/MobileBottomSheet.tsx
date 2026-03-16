@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import BackgroundPicker from "@/components/panels/BackgroundPicker";
 import ShadowControls from "@/components/panels/ShadowControls";
 import AnnotationTools from "@/components/panels/AnnotationTools";
@@ -14,7 +14,6 @@ export default function MobileBottomSheet({
   isOpen,
   onClose,
 }: MobileBottomSheetProps) {
-  const sheetRef = useRef<HTMLDivElement>(null);
   const [startY, setStartY] = useState(0);
   const [currentY, setCurrentY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -58,16 +57,14 @@ export default function MobileBottomSheet({
         <div
           className="relative w-full h-full pt-[3px] rounded-t-2xl overflow-hidden"
           style={{
-            background: 'linear-gradient(90deg, #00f5ff, #00d4ff, #0099ff, #6b5eff, #b84eff, #ff4e91, #ff4e50, #00f5ff)',
-            backgroundSize: '200% 100%',
-            animation: 'borderAnimation 3s linear infinite',
+            background:
+              "linear-gradient(90deg, #00f5ff, #00d4ff, #0099ff, #6b5eff, #b84eff, #ff4e91, #ff4e50, #00f5ff)",
+            backgroundSize: "200% 100%",
+            animation: "borderAnimation 3s linear infinite",
           }}
         >
           {/* Inner sheet with dark background */}
-          <div
-            ref={sheetRef}
-            className="w-full h-full bg-[#1a1a1a] rounded-t-2xl overflow-hidden flex flex-col"
-          >
+          <div className="w-full h-full bg-[#1a1a1a] rounded-t-2xl overflow-hidden flex flex-col">
             {/* Header with handle and close button - ONLY this area is draggable */}
             <div
               className="flex items-center justify-between px-4 py-2 border-b border-white/10 cursor-grab active:cursor-grabbing"
@@ -100,9 +97,7 @@ export default function MobileBottomSheet({
             </div>
 
             {/* Content - NOT draggable */}
-            <div
-              className="overflow-y-auto px-4 pb-4 space-y-4 flex-1"
-            >
+            <div className="overflow-y-auto px-4 pb-4 space-y-4 flex-1">
               <BackgroundPicker />
               <ShadowControls />
               <AnnotationTools />
@@ -110,18 +105,6 @@ export default function MobileBottomSheet({
           </div>
         </div>
       </div>
-
-      {/* Keyframe animation */}
-      <style jsx>{`
-        @keyframes borderAnimation {
-          0% {
-            background-position: 0% 50%;
-          }
-          100% {
-            background-position: 200% 50%;
-          }
-        }
-      `}</style>
     </>
   );
 }

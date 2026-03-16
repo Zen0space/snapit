@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
-// TODO: Add landing page later — editor will move to /editor, and / will become the marketing page
-
-const BASE_URL = "https://snapit.rekabytes.com";
+import { BASE_URL } from "@/lib/config";
+import { CookieBanner } from "@/components/ui/CookieBanner";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -112,7 +110,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }

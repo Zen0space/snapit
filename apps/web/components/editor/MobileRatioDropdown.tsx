@@ -1,26 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useEditorStore } from "@/store/editorStore";
 import { ASPECT_RATIO_PRESETS, type AspectRatioPreset } from "@/lib/presets";
+import { useClickOutside } from "@/hooks/useClickOutside";
 
 export default function MobileRatioDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { aspectRatio, setAspectRatio } = useEditorStore();
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const close = useCallback(() => setIsOpen(false), []);
+  useClickOutside(dropdownRef, close);
 
   const handleSelect = (preset: AspectRatioPreset) => {
     setAspectRatio(preset);
