@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifySessionToken } from "@/lib/session";
 
-const PROTECTED = ["/dashboard", "/events"];
+const PROTECTED = ["/dashboard", "/events", "/cookies"];
 const SESSION_COOKIE = "snap_admin_session";
 
 export async function middleware(request: NextRequest) {
@@ -27,5 +27,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/events/:path*"],
+  matcher: ["/dashboard/:path*", "/events/:path*", "/cookies/:path*"],
 };

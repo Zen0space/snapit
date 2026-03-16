@@ -2,8 +2,8 @@ import { z } from "zod";
 import geoip from "geoip-lite";
 import { UAParser } from "ua-parser-js";
 import { TRPCError } from "@trpc/server";
-import { prisma } from "../prisma";
-import { router, publicProcedure, adminProcedure } from "../trpc";
+import { prisma } from "../prisma.js";
+import { router, publicProcedure, adminProcedure } from "../trpc.js";
 import type { DashboardStats } from "@snap-it/types";
 
 const EventTypeSchema = z.enum([
@@ -48,6 +48,7 @@ export const analyticsRouter = router({
         type: EventTypeSchema,
         tool: z.string().optional(),
         meta: z.string().optional(),
+        visitorId: z.string().uuid().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -74,6 +75,7 @@ export const analyticsRouter = router({
             type: input.type,
             tool: input.tool ?? null,
             meta: input.meta ?? null,
+            visitorId: input.visitorId ?? null,
             country: geo?.country ?? null,
             region: geo?.region ?? null,
             browser,
@@ -215,6 +217,7 @@ export const analyticsRouter = router({
               type: string;
               tool: string | null;
               meta: string | null;
+              visitorId: string | null;
               country: string | null;
               region: string | null;
               browser: string | null;

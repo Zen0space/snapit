@@ -9,6 +9,7 @@ type RawEvent = {
   type: string;
   tool: string | null;
   meta: string | null;
+  visitorId: string | null;
   country: string | null;
   region: string | null;
   browser: string | null;
