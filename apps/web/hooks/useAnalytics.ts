@@ -80,7 +80,7 @@ export function useAnalytics() {
       let effectiveVisitorId = visitorId;
       if (!effectiveVisitorId && typeof window !== "undefined") {
         effectiveVisitorId =
-          localStorage.getItem("snap_visitor_id") ?? undefined;
+          localStorage.getItem("snap_visitor_id") ?? null;
       }
 
       if (process.env.NODE_ENV === "development") {
@@ -92,7 +92,7 @@ export function useAnalytics() {
           type,
           tool: options?.tool,
           meta: options?.meta,
-          visitorId: effectiveVisitorId,
+          visitorId: effectiveVisitorId ?? undefined,
         })
         .then(() => {
           if (process.env.NODE_ENV === "development") {
