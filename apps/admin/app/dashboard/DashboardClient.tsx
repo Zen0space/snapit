@@ -59,7 +59,7 @@ export default function DashboardClient({ stats }: Props) {
       </div>
 
       {/* Events over time */}
-      <ChartCard title="Events over last 30 days">
+      <ChartCard title="Exports & Copies over last 30 days">
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={stats.eventsOverTime} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -72,9 +72,12 @@ export default function DashboardClient({ stats }: Props) {
             <Tooltip
               contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
               labelStyle={{ color: 'rgba(255,255,255,0.6)' }}
-              itemStyle={{ color: '#0ea5e9' }}
             />
-            <Line type="monotone" dataKey="count" stroke="#0ea5e9" strokeWidth={2} dot={false} />
+            <Legend
+              formatter={(v) => <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'capitalize' }}>{v}</span>}
+            />
+            <Line type="monotone" dataKey="exports" stroke="#0ea5e9" strokeWidth={2} dot={false} name="Exports" />
+            <Line type="monotone" dataKey="copies" stroke="#10b981" strokeWidth={2} dot={false} name="Copies" />
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>

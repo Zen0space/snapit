@@ -146,8 +146,13 @@ export const analyticsRouter = router({
           orderBy: { _count: { device: "desc" } },
           take: 5,
         }),
-        prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
-          SELECT DATE("createdAt")::text as date, COUNT(*)::bigint as count
+        prisma.$queryRaw<
+          Array<{ date: string; exports: bigint; copies: bigint }>
+        >`
+          SELECT
+            DATE("createdAt")::text as date,
+            COUNT(*) FILTER (WHERE type = 'exported')::bigint as exports,
+            COUNT(*) FILTER (WHERE type = 'copied')::bigint as copies
           FROM "Event"
           WHERE "createdAt" >= ${thirtyDaysAgo}
           GROUP BY DATE("createdAt")
@@ -180,10 +185,13 @@ export const analyticsRouter = router({
             count: r._count.device,
           }),
         ),
-        eventsOverTime: dailyRows.map((r: { date: string; count: bigint }) => ({
-          date: r.date,
-          count: Number(r.count),
-        })),
+        eventsOverTime: dailyRows.map(
+          (r: { date: string; exports: bigint; copies: bigint }) => ({
+            date: r.date,
+            exports: Number(r.exports),
+            copies: Number(r.copies),
+          }),
+        ),
       };
     } catch (error) {
       console.error("[analytics] Failed to fetch stats:", error);

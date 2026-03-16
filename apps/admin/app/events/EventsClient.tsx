@@ -7,6 +7,7 @@ const EVENT_TYPES = [
   "image_uploaded",
   "bg_changed",
   "exported",
+  "copied",
   "shadow_toggled",
 ];
 
@@ -14,6 +15,7 @@ const EVENT_COLORS: Record<string, string> = {
   image_uploaded: "bg-sky-500/20 text-sky-400",
   bg_changed: "bg-violet-500/20 text-violet-400",
   exported: "bg-emerald-500/20 text-emerald-400",
+  copied: "bg-green-500/20 text-green-400",
   shadow_toggled: "bg-slate-500/20 text-slate-400",
 };
 
