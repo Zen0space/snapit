@@ -106,8 +106,10 @@ export const analyticsRouter = router({
       const [
         totalExports,
         totalUploads,
+        totalCopies,
         totalEvents,
         exportsToday,
+        copiesToday,
         countryRows,
         browserRows,
         deviceRows,
@@ -115,9 +117,13 @@ export const analyticsRouter = router({
       ] = await Promise.all([
         prisma.event.count({ where: { type: "exported" } }),
         prisma.event.count({ where: { type: "image_uploaded" } }),
+        prisma.event.count({ where: { type: "copied" } }),
         prisma.event.count(),
         prisma.event.count({
           where: { type: "exported", createdAt: { gte: todayStart } },
+        }),
+        prisma.event.count({
+          where: { type: "copied", createdAt: { gte: todayStart } },
         }),
         prisma.event.groupBy({
           by: ["country"],
@@ -152,8 +158,10 @@ export const analyticsRouter = router({
       return {
         totalExports,
         totalUploads,
+        totalCopies,
         totalEvents,
         exportsToday,
+        copiesToday,
         topCountries: countryRows.map(
           (r: { country: string | null; _count: { country: number } }) => ({
             country: r.country ?? "Unknown",

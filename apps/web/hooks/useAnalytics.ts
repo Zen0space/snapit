@@ -7,6 +7,7 @@ import { useCookieConsent } from "@/hooks/useCookieConsent";
 const NECESSARY_EVENTS: ReadonlySet<EventType> = new Set([
   "image_uploaded",
   "exported",
+  "copied",
 ]);
 
 /**
@@ -15,7 +16,7 @@ const NECESSARY_EVENTS: ReadonlySet<EventType> = new Set([
  *
  * Consent gating:
  * - `null`        → no consent given yet, all events are suppressed
- * - `"necessary"` → only `image_uploaded` and `exported` fire
+ * - `"necessary"` → only `image_uploaded`, `exported`, and `copied` fire
  * - `"all"`       → all events fire
  *
  * The anonymous `visitorId` is attached to every event that fires so the
