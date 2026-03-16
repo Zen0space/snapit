@@ -41,7 +41,8 @@ export function CookieBanner() {
           We use anonymous analytics to understand how Snap-It is used and
           improve the experience. No personal data is sold or shared.{" "}
           <span className="text-neutral-500">
-            "Necessary only" limits tracking to uploads &amp; exports.
+            &ldquo;Necessary only&rdquo; limits tracking to uploads &amp;
+            exports.
           </span>
         </p>
 

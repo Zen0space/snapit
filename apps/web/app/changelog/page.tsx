@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { getReleases, GitHubRelease } from "@/lib/github";
+import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "Changelog",
@@ -67,7 +68,10 @@ function getCategoryConfig(header: string) {
   // Remove emojis and special characters, then normalize
   const normalized = header
     .toLowerCase()
-    .replace(/[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]/gu, "") // Remove all emojis
+    .replace(
+      /[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\p{Emoji_Modifier_Base}\p{Emoji_Presentation}]/gu,
+      "",
+    ) // Remove all emojis
     .replace(/[:\-']/g, "") // Remove colons, dashes, and apostrophes
     .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
@@ -441,14 +445,7 @@ export default async function ChangelogPage() {
         )}
       </main>
 
-      <footer className="relative border-t border-white/[0.05] mt-12">
-        <div className="max-w-3xl mx-auto px-4 py-6 flex items-center justify-between text-xs text-white/30">
-          <span>Snap-It Changelog</span>
-          <Link href="/" className="hover:text-white/50 transition-colors">
-            Back to Editor
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

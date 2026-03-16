@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BASE_URL } from "@/lib/config";
+import { Footer } from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
@@ -78,7 +79,7 @@ function Cross({ children }: { children: React.ReactNode }) {
 
 export default function CookiePolicyPage() {
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-[#0a0a0a]">
       {/* Nav */}
       <header className="border-b border-white/10">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
@@ -149,8 +150,8 @@ export default function CookiePolicyPage() {
               Meta, or any third party.
             </Check>
             <Check>
-              You choose what to allow. "Necessary Only" limits tracking to
-              uploads and exports.
+              You choose what to allow. &ldquo;Necessary Only&rdquo; limits
+              tracking to uploads and exports.
             </Check>
             <Check>
               General events are deleted after 3 months. Upload and export
@@ -253,15 +254,16 @@ export default function CookiePolicyPage() {
             </li>
             <li>Make informed decisions about which features to build next</li>
             <li>
-              Share anonymised aggregate milestones publicly (e.g. "10,000
-              exports this month")
+              Share anonymised aggregate milestones publicly (e.g. &ldquo;10,000
+              exports this month&rdquo;)
             </li>
           </ul>
           <p className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-amber-300/80">
             <strong className="text-amber-300">On aggregate statistics:</strong>{" "}
-            Totals such as "X exports this month" are numbers only — they cannot
-            identify any individual and are not personal data under GDPR or
-            CCPA. We may share these figures publicly.
+            Totals such as &ldquo;X exports this month&rdquo; are numbers only —
+            they cannot identify any individual and are not personal data under
+            the PDPA 2010 (Akta 709), GDPR, or CCPA. We may share these figures
+            publicly.
           </p>
         </Section>
 
@@ -362,19 +364,32 @@ export default function CookiePolicyPage() {
 
         <Section title="7. Your rights">
           <p>
-            Depending on where you are located you may have rights under GDPR,
-            CCPA, or similar legislation to:
+            Under Malaysia&apos;s{" "}
+            <strong className="text-white/80">
+              Personal Data Protection Act 2010 (Akta 709)
+            </strong>{" "}
+            and its 2024 amendments, as well as other applicable legislation
+            (GDPR, CCPA), you have the right to:
           </p>
           <ul className="space-y-1.5 list-disc list-inside marker:text-white/20">
             <li>
-              Request a copy of any data associated with your anonymous visitor
-              ID
+              Request access to any data associated with your anonymous visitor
+              ID (PDPA s.30)
+            </li>
+            <li>Request correction of inaccurate data (PDPA s.34)</li>
+            <li>
+              Withdraw consent at any time — clear your browser&apos;s
+              localStorage and the banner will re-appear
             </li>
             <li>
               Request deletion of your data before the automatic retention
-              period
+              period (PDPA Access Principle)
             </li>
-            <li>Object to processing</li>
+            <li>Object to or restrict processing</li>
+            <li>
+              Request data portability in a machine-readable format (PDPA
+              Amending Act, effective June 1, 2025)
+            </li>
           </ul>
           <p>
             To exercise any of these rights, email us at{" "}
@@ -394,7 +409,17 @@ export default function CookiePolicyPage() {
             <code className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-mono text-white/60">
               snap_visitor_id
             </code>
-            ). We aim to respond within 30 days.
+            ). We aim to respond within 30 calendar days.
+          </p>
+          <p>
+            For the full data protection framework governing Snap-It, see our{" "}
+            <Link
+              href="/privacy-policy"
+              className="text-sky-400 hover:text-sky-300 transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            .
           </p>
         </Section>
 
@@ -405,21 +430,9 @@ export default function CookiePolicyPage() {
             posted constitutes acceptance.
           </p>
         </Section>
-
-        {/* Footer */}
-        <div className="h-px bg-white/5" />
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-white/20">
-            © {new Date().getFullYear()} Rekabytes. All rights reserved.
-          </p>
-          <Link
-            href="/"
-            className="text-xs text-white/30 hover:text-white/60 transition-colors"
-          >
-            Back to Snap-It →
-          </Link>
-        </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
