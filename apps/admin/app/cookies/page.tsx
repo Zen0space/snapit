@@ -24,7 +24,7 @@ export default async function CookiesPage({
   } | null = null;
 
   try {
-    const trpc = createAdminTrpc(password);
+    const trpc = await createAdminTrpc(password);
     data = await trpc.consent.getConsents.query({ page, limit: 50 });
   } catch {
     data = null;

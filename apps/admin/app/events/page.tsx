@@ -36,12 +36,25 @@ export default async function EventsPage({
   // falls back to page 1 for any invalid input (e.g. ?page=abc) instead of crashing.
   const pageSchema = z.coerce.number().int().min(1).default(1);
   const page = pageSchema.catch(1).parse(searchParams.page);
-  const type = searchParams.type as EventType | undefined;
+
+  // Validate type against the known EventType enum — reject arbitrary strings.
+  const typeSchema = z
+    .enum([
+      "image_uploaded",
+      "bg_changed",
+      "exported",
+      "copied",
+      "shadow_toggled",
+    ] as const)
+    .optional();
+  const type = typeSchema.catch(undefined).parse(searchParams.type) as
+    | EventType
+    | undefined;
 
   let data: { events: AnalyticsEvent[]; total: number; pages: number } | null =
     null;
   try {
-    const trpc = createAdminTrpc(password);
+    const trpc = await createAdminTrpc(password);
     const result = await trpc.analytics.getRecentEvents.query({
       page,
       limit: 50,

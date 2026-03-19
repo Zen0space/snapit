@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 async function fetchStats(password: string): Promise<DashboardStats | null> {
   try {
-    const trpc = createAdminTrpc(password);
+    const trpc = await createAdminTrpc(password);
     return await trpc.analytics.getStats.query();
   } catch {
     return null;
