@@ -42,3 +42,37 @@ body {
     background-position: 200% 50%;
   }
 }
+
+/* Eid theme — twinkling gold stars */
+@keyframes eidTwinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+/* Eid navbar — gold shimmer sweep */
+@keyframes eidNavShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Eid navbar — soft text glow pulse */
+@keyframes eidTextGlow {
+  0%,
+  100% {
+    filter: brightness(1) drop-shadow(0 0 2px rgba(212, 175, 55, 0));
+  }
+  50% {
+    filter: brightness(1.15) drop-shadow(0 0 8px rgba(212, 175, 55, 0.3));
+  }
+}

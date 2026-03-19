@@ -9,6 +9,7 @@ import DropZone from "@/components/editor/DropZone";
 import MobileRatioDropdown from "@/components/editor/MobileRatioDropdown";
 import MobileBottomSheet from "@/components/editor/MobileBottomSheet";
 import MobileEditButton from "@/components/editor/MobileEditButton";
+import EidOverlay from "@/components/editor/EidOverlay";
 import { useEditorStore } from "@/store/editorStore";
 
 const EditorCanvas = dynamic(() => import("@/components/editor/EditorCanvas"), {
@@ -78,12 +79,19 @@ export default function HomePage() {
         <LeftPanel alignmentFunctions={alignmentFnsRef.current} />
 
         <main
-          className="flex-1 flex relative transition-all duration-300 ease-out"
+          className="flex-1 flex relative transition-all duration-300 ease-out bg-[#040f08]"
           style={{
             height: isSheetOpen ? "calc(100% - 40vh)" : "100%",
             overflow: isSheetOpen ? "auto" : "hidden",
+            backgroundImage: [
+              "radial-gradient(circle at 1px 1px, rgba(212,175,55,0.07) 1px, transparent 0)",
+              "radial-gradient(ellipse at 50% 50%, rgba(212,175,55,0.06) 0%, transparent 60%)",
+              "linear-gradient(160deg, #041a0e 0%, #0a0a0a 60%, #070f0a 100%)",
+            ].join(", "),
+            backgroundSize: "24px 24px, 100% 100%, 100% 100%",
           }}
         >
+          <EidOverlay />
           {hasImage && (
             <>
               {/* Mobile Controls Row - Ratio + Alignment */}

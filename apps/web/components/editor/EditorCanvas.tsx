@@ -287,12 +287,7 @@ export default function EditorCanvas({
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex items-center justify-center overflow-hidden bg-[#0a0a0a] relative"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)",
-        backgroundSize: "24px 24px",
-      }}
+      className="flex-1 flex items-center justify-center overflow-hidden relative"
     >
       {canvasVisible && (
         <div className="relative pt-12">
