@@ -94,6 +94,27 @@ export const BACKGROUND_PRESETS: BackgroundPreset[] = [
     value: "transparent",
     fabricValue: "transparent",
   },
+  {
+    id: "eid-mubarak",
+    label: "Eid Mubarak",
+    type: "gradient",
+    value: "linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1f3a2a 100%)",
+    fabricValue: "linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1f3a2a 100%)",
+  },
+  {
+    id: "eid-gold",
+    label: "Eid Gold",
+    type: "gradient",
+    value: "linear-gradient(135deg, #d4af37 0%, #f5d547 50%, #d4af37 100%)",
+    fabricValue: "linear-gradient(135deg, #d4af37 0%, #f5d547 50%, #d4af37 100%)",
+  },
+  {
+    id: "eid-night",
+    label: "Eid Night",
+    type: "gradient",
+    value: "linear-gradient(135deg, #0a1f1a 0%, #1a3a2a 50%, #0f2a1f 100%)",
+    fabricValue: "linear-gradient(135deg, #0a1f1a 0%, #1a3a2a 50%, #0f2a1f 100%)",
+  },
 ];
 
 // Aspect ratio presets
