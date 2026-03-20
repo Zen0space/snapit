@@ -206,7 +206,7 @@ export default function EditorCanvas({
 
   // ── Export ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    onExportReady(() => {
+    onExportReady(async () => {
       const canvas = canvasRef.current;
       const img = screenshotRef.current;
       if (!canvas) return;
@@ -220,11 +220,45 @@ export default function EditorCanvas({
         canvasHeight,
       );
 
-      const dataUrl = canvas.toDataURL({ format: "png", multiplier });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = "snap-it.png";
-      a.click();
+      try {
+        // Render to an offscreen canvas, then convert to Blob.
+        // This avoids huge base-64 data-URL strings that crash mobile browsers.
+        const offscreen = canvas.toCanvasElement(multiplier);
+
+        const blob = await new Promise<Blob | null>((resolve) =>
+          offscreen.toBlob(resolve, "image/png"),
+        );
+        if (!blob) return;
+
+        // Try native share on mobile (iOS/Android) — gives "Save Image" option
+        if (
+          typeof navigator.share === "function" &&
+          navigator.canShare?.({
+            files: [new File([blob], "snap-it.png", { type: "image/png" })],
+          })
+        ) {
+          const file = new File([blob], "snap-it.png", { type: "image/png" });
+          await navigator.share({ files: [file] });
+          return;
+        }
+
+        // Desktop / browsers without Web Share: Object URL + anchor click
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "snap-it.png";
+        document.body.appendChild(a);
+        a.click();
+        // Clean up
+        requestAnimationFrame(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+      } catch {
+        // Last-resort fallback: open the image in a new tab
+        const dataUrl = canvas.toDataURL({ format: "png", multiplier });
+        window.open(dataUrl, "_blank");
+      }
     });
   }, [
     onExportReady,
@@ -251,22 +285,19 @@ export default function EditorCanvas({
         canvasHeight,
       );
 
-      const dataUrl = canvas.toDataURL({ format: "png", multiplier });
-
-      // Convert data URL to blob
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-
-      // Copy to clipboard
       try {
+        // Render to an offscreen canvas, then convert directly to Blob
+        const offscreen = canvas.toCanvasElement(multiplier);
+        const blob = await new Promise<Blob | null>((resolve) =>
+          offscreen.toBlob(resolve, "image/png"),
+        );
+        if (!blob) return;
+
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
         ]);
-      } catch (err) {
-        console.warn(
-          "[clipboard] Copy failed — permission denied or unsupported:",
-          err,
-        );
+      } catch {
+        // Silently fail — clipboard API may be unsupported or denied
       }
     });
   }, [

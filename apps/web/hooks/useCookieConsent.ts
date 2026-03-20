@@ -35,16 +35,6 @@ export function useCookieConsent() {
       setVisitorIdState(storedVisitorId);
     }
 
-    // DEBUG: Log hydration completion
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        "[consent] Hydration complete - consent:",
-        storedConsent,
-        "visitorId:",
-        storedVisitorId,
-      );
-    }
-
     setHydrated(true);
   }, []);
 
@@ -63,10 +53,8 @@ export function useCookieConsent() {
     // Sync to backend — fire-and-forget, must never block or throw
     trpc.consent.setConsent
       .mutate({ visitorId: vid, consent: value })
-      .catch((err) => {
-        if (process.env.NODE_ENV === "development") {
-          console.error("[consent] Backend sync failed:", err);
-        }
+      .catch(() => {
+        // Silently swallow — consent sync should never block the UI
       });
   }, []);
 

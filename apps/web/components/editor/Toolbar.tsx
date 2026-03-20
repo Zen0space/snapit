@@ -25,37 +25,52 @@ export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-3 sm:px-5 border-b border-amber-500/20 bg-gradient-to-r from-[#0a1f0f] via-[#0f2b16] to-[#0a1f0f] flex-shrink-0 relative overflow-hidden">
-      {/* Subtle animated gold shimmer across the navbar */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, transparent 0%, #d4af37 50%, transparent 100%)",
-          backgroundSize: "200% 100%",
-          animation: "eidNavShimmer 4s ease-in-out infinite",
-        }}
-      />
+    <header className="h-14 flex items-center justify-between px-3 sm:px-5 border-b border-amber-500/20 bg-gradient-to-r from-[#0a1f0f] via-[#0f2b16] to-[#0a1f0f] flex-shrink-0 relative">
+      {/* Contained decorative elements — overflow-hidden here instead of on header so dropdown isn't clipped */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Subtle animated gold shimmer across the navbar */}
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, transparent 0%, #d4af37 50%, transparent 100%)",
+            backgroundSize: "200% 100%",
+            animation: "eidNavShimmer 4s ease-in-out infinite",
+          }}
+        />
 
-      {/* Decorative twinkling stars on navbar */}
-      <span
-        className="absolute text-[8px] text-amber-400/40 pointer-events-none"
-        style={{ top: "6px", left: "30%", animation: "eidTwinkle 3s 0.5s ease-in-out infinite" }}
-      >
-        ✦
-      </span>
-      <span
-        className="absolute text-[6px] text-amber-400/30 pointer-events-none hidden sm:inline"
-        style={{ top: "10px", left: "55%", animation: "eidTwinkle 4s 1.2s ease-in-out infinite" }}
-      >
-        ✦
-      </span>
-      <span
-        className="absolute text-[7px] text-amber-400/35 pointer-events-none hidden sm:inline"
-        style={{ bottom: "8px", right: "35%", animation: "eidTwinkle 3.5s 2s ease-in-out infinite" }}
-      >
-        ✦
-      </span>
+        {/* Decorative twinkling stars on navbar */}
+        <span
+          className="absolute text-[8px] text-amber-400/40"
+          style={{
+            top: "6px",
+            left: "30%",
+            animation: "eidTwinkle 3s 0.5s ease-in-out infinite",
+          }}
+        >
+          ✦
+        </span>
+        <span
+          className="absolute text-[6px] text-amber-400/30 hidden sm:inline"
+          style={{
+            top: "10px",
+            left: "55%",
+            animation: "eidTwinkle 4s 1.2s ease-in-out infinite",
+          }}
+        >
+          ✦
+        </span>
+        <span
+          className="absolute text-[7px] text-amber-400/35 hidden sm:inline"
+          style={{
+            bottom: "8px",
+            right: "35%",
+            animation: "eidTwinkle 3.5s 2s ease-in-out infinite",
+          }}
+        >
+          ✦
+        </span>
+      </div>
 
       {/* Left — Logo */}
       <div className="flex items-center gap-2.5 relative z-10">
@@ -88,7 +103,8 @@ export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
 
       {/* Center — Eid Mubarak greeting */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-        <span className="text-sm sm:text-base font-semibold bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 bg-clip-text text-transparent tracking-wide whitespace-nowrap"
+        <span
+          className="text-sm sm:text-base font-semibold bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 bg-clip-text text-transparent tracking-wide whitespace-nowrap"
           style={{ animation: "eidTextGlow 3s ease-in-out infinite" }}
         >
           🌙 Happy Eid Mubarak ✨
