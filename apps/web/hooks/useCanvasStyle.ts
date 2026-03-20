@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from "react";
 import { useEditorStore } from "@/store/editorStore";
 import { makeFabricGradient, type CanvasRefs } from "./useCanvasCore";
+import { drawEidPattern, type EidPatternId } from "@/lib/eidPatterns";
 
 type FabricModule = typeof import("fabric");
 type FabricImage = InstanceType<FabricModule["FabricImage"]>;
@@ -27,12 +28,45 @@ export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
     const { width, height } = canvas;
 
     if (background.value === "transparent") {
+      canvas.backgroundImage = undefined;
       canvas.backgroundColor = "transparent";
-    } else if (background.type === "gradient") {
-      const grad = makeFabricGradient(background.value, width, height, fabric);
-      canvas.backgroundColor = grad ?? "#1a1a2e";
+      canvas.renderAll();
+      return;
+    }
+
+    // ── Option B: Eid pattern via offscreen Canvas 2D ─────────────────────
+    if (background.patternId) {
+      const offscreen = document.createElement("canvas");
+      drawEidPattern(
+        background.patternId as EidPatternId,
+        offscreen,
+        width,
+        height,
+      );
+      const dataUrl = offscreen.toDataURL();
+
+      fabric.FabricImage.fromURL(dataUrl).then((img) => {
+        // Ensure we still have the same canvas (guard against unmount)
+        if (refs.canvasRef.current !== canvas) return;
+        img.set({ left: 0, top: 0, originX: "left", originY: "top" });
+        canvas.backgroundImage = img;
+        canvas.renderAll();
+      });
+      return;
+    }
+
+    // ── Standard gradient or solid ────────────────────────────────────────
+    canvas.backgroundImage = undefined;
+    if (background.type === "gradient") {
+      const fv = background.fabricValue;
+      if (fv.startsWith("#") || fv.startsWith("rgb")) {
+        canvas.backgroundColor = fv;
+      } else {
+        const grad = makeFabricGradient(fv, width, height, fabric);
+        canvas.backgroundColor = grad ?? "#1a1a2e";
+      }
     } else {
-      canvas.backgroundColor = background.value;
+      canvas.backgroundColor = background.fabricValue ?? background.value;
     }
 
     canvas.renderAll();
