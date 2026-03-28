@@ -1,8 +1,15 @@
 "use client";
 
 import { useRef, useCallback } from "react";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue } from "jotai";
+import {
+  canvasModeAtom,
+  canvasWidthAtom,
+  canvasHeightAtom,
+  aspectRatioAtom,
+} from "@/store/atoms";
 import type { AspectRatioPreset } from "@/lib/presets";
+import type { CanvasMode } from "@/shared/types";
 
 type FabricModule = typeof import("fabric");
 type FabricCanvas = InstanceType<FabricModule["Canvas"]>;
@@ -74,13 +81,15 @@ export interface CanvasRefs {
 // ---------------------------------------------------------------------------
 
 export function useCanvasDimensions(refs: Pick<CanvasRefs, "containerRef">) {
-  const { canvasMode, canvasWidth, canvasHeight, aspectRatio } =
-    useEditorStore();
+  const canvasMode = useAtomValue(canvasModeAtom);
+  const canvasWidth = useAtomValue(canvasWidthAtom);
+  const canvasHeight = useAtomValue(canvasHeightAtom);
+  const aspectRatio = useAtomValue(aspectRatioAtom);
 
   const getDimensions = useCallback(
     (
       overrides?: Partial<{
-        canvasMode: "ratio" | "manual";
+        canvasMode: CanvasMode;
         canvasWidth: number;
         canvasHeight: number;
         aspectRatio: AspectRatioPreset;

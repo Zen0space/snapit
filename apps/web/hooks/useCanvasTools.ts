@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { activeToolAtom } from "@/store/atoms";
 import { type CanvasRefs } from "./useCanvasCore";
 
 type FabricModule = typeof import("fabric");
 type FabricCanvas = InstanceType<FabricModule["Canvas"]>;
 type FabricRect = InstanceType<FabricModule["Rect"]>;
 type FabricPointerEvent = import("fabric").TPointerEventInfo;
+type ActiveToolSetter = (tool: "select") => void;
 
 interface UseCanvasToolsProps {
   refs: Pick<CanvasRefs, "canvasRef" | "fabricRef">;
@@ -18,7 +20,8 @@ interface UseCanvasToolsProps {
  * Registers and cleans up event listeners when activeTool changes.
  */
 export function useCanvasTools({ refs }: UseCanvasToolsProps) {
-  const { activeTool } = useEditorStore();
+  const activeTool = useAtomValue(activeToolAtom);
+  const setActiveTool = useSetAtom(activeToolAtom);
 
   useEffect(() => {
     const canvas = refs.canvasRef.current;
@@ -30,20 +33,24 @@ export function useCanvasTools({ refs }: UseCanvasToolsProps) {
     canvas.defaultCursor = activeTool === "select" ? "default" : "crosshair";
 
     if (activeTool === "text") {
-      return registerTextTool(canvas, fabric);
+      return registerTextTool(canvas, fabric, setActiveTool);
     }
 
     if (activeTool === "blur") {
-      return registerBlurTool(canvas, fabric);
+      return registerBlurTool(canvas, fabric, setActiveTool);
     }
-  }, [activeTool, refs.canvasRef, refs.fabricRef]);
+  }, [activeTool, refs.canvasRef, refs.fabricRef, setActiveTool]);
 }
 
 // ---------------------------------------------------------------------------
 // Text tool
 // ---------------------------------------------------------------------------
 
-function registerTextTool(canvas: FabricCanvas, fabric: FabricModule) {
+function registerTextTool(
+  canvas: FabricCanvas,
+  fabric: FabricModule,
+  setActiveTool: ActiveToolSetter,
+) {
   const onMouseDown = (opt: FabricPointerEvent) => {
     const pointer = canvas.getPointer(opt.e);
     const text = new fabric.IText("Click to type...", {
@@ -58,7 +65,7 @@ function registerTextTool(canvas: FabricCanvas, fabric: FabricModule) {
     canvas.setActiveObject(text);
     text.enterEditing();
     canvas.renderAll();
-    useEditorStore.getState().setActiveTool("select");
+    setActiveTool("select");
   };
 
   canvas.on("mouse:down", onMouseDown);
@@ -69,7 +76,11 @@ function registerTextTool(canvas: FabricCanvas, fabric: FabricModule) {
 // Blur / redact tool
 // ---------------------------------------------------------------------------
 
-function registerBlurTool(canvas: FabricCanvas, fabric: FabricModule) {
+function registerBlurTool(
+  canvas: FabricCanvas,
+  fabric: FabricModule,
+  setActiveTool: ActiveToolSetter,
+) {
   let rect: FabricRect | null = null;
   let startX = 0;
   let startY = 0;
@@ -134,7 +145,7 @@ function registerBlurTool(canvas: FabricCanvas, fabric: FabricModule) {
     canvas.add(redact);
     canvas.renderAll();
     rect = null;
-    useEditorStore.getState().setActiveTool("select");
+    setActiveTool("select");
   };
 
   canvas.on("mouse:down", onMouseDown);

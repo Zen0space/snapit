@@ -1,11 +1,18 @@
 "use client";
 
+import { useAtomValue } from "jotai";
+import { hasImageAtom } from "@/store/atoms";
 import { PanelSection } from "@/components/ui/PanelSection";
+import {
+  CenterHorizontalIcon,
+  CenterVerticalIcon,
+  CenterBothIcon,
+} from "@/components/ui/AlignmentIcons";
 
 interface ImageAlignmentPanelProps {
-  onCenterHorizontal?: () => void;
-  onCenterVertical?: () => void;
-  onCenterBoth?: () => void;
+  onCenterHorizontal: () => void;
+  onCenterVertical: () => void;
+  onCenterBoth: () => void;
 }
 
 export default function ImageAlignmentPanel({
@@ -13,85 +20,42 @@ export default function ImageAlignmentPanel({
   onCenterVertical,
   onCenterBoth,
 }: ImageAlignmentPanelProps) {
-  const hasImage = !!(onCenterHorizontal && onCenterVertical && onCenterBoth);
+  const hasImage = useAtomValue(hasImageAtom);
+
+  const btnClass = (enabled: boolean) =>
+    `w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
+      enabled
+        ? "hover:bg-white/5 text-white/70 cursor-pointer"
+        : "text-white/30 cursor-not-allowed opacity-50"
+    }`;
+
   return (
     <PanelSection title="Image Alignment">
       <div className="space-y-2">
-        {/* Center Horizontal Button */}
         <button
           onClick={onCenterHorizontal}
           disabled={!hasImage}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
-            hasImage
-              ? "hover:bg-white/5 text-white/70 cursor-pointer"
-              : "text-white/30 cursor-not-allowed opacity-50"
-          }`}
+          className={btnClass(hasImage)}
         >
-          <svg
-            className="w-4 h-4 flex-shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="12" y1="2" x2="12" y2="22" />
-            <line x1="4" y1="12" x2="10" y2="12" />
-            <line x1="14" y1="12" x2="20" y2="12" />
-          </svg>
+          <CenterHorizontalIcon className="w-4 h-4 flex-shrink-0" />
           <span>Center Horizontal</span>
         </button>
 
-        {/* Center Vertical Button */}
         <button
           onClick={onCenterVertical}
           disabled={!hasImage}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
-            hasImage
-              ? "hover:bg-white/5 text-white/70 cursor-pointer"
-              : "text-white/30 cursor-not-allowed opacity-50"
-          }`}
+          className={btnClass(hasImage)}
         >
-          <svg
-            className="w-4 h-4 flex-shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="2" y1="12" x2="22" y2="12" />
-            <line x1="12" y1="4" x2="12" y2="10" />
-            <line x1="12" y1="14" x2="12" y2="20" />
-          </svg>
+          <CenterVerticalIcon className="w-4 h-4 flex-shrink-0" />
           <span>Center Vertical</span>
         </button>
 
-        {/* Center Both Button */}
         <button
           onClick={onCenterBoth}
           disabled={!hasImage}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-transparent transition-colors ${
-            hasImage
-              ? "hover:bg-white/5 text-white/70 cursor-pointer"
-              : "text-white/30 cursor-not-allowed opacity-50"
-          }`}
+          className={btnClass(hasImage)}
         >
-          <svg
-            className="w-4 h-4 flex-shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="16" />
-            <line x1="8" y1="12" x2="16" y2="12" />
-          </svg>
+          <CenterBothIcon className="w-4 h-4 flex-shrink-0" />
           <span>Center Both</span>
         </button>
       </div>

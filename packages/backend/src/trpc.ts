@@ -1,8 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { Request } from "express";
-import { z } from "zod";
-
-void z; // keep import
 
 export interface Context {
   req: Request;

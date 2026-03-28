@@ -1,6 +1,7 @@
 "use client";
 
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { activeToolAtom, hasImageAtom } from "@/store/atoms";
 import { PanelSection } from "@/components/ui/PanelSection";
 import type { ActiveTool } from "@snap-it/types";
 
@@ -78,7 +79,9 @@ const TOOLS: ToolButton[] = [
 ];
 
 export default function AnnotationTools() {
-  const { activeTool, setActiveTool, hasImage } = useEditorStore();
+  const activeTool = useAtomValue(activeToolAtom);
+  const hasImage = useAtomValue(hasImageAtom);
+  const setActiveTool = useSetAtom(activeToolAtom);
 
   const handleTool = (tool: ActiveTool) => {
     setActiveTool(tool);

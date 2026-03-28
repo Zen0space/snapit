@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue } from "jotai";
+import { hasImageAtom } from "@/store/atoms";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import ExportDropdown from "./ExportDropdown";
+import MobileNavDrawer from "./MobileNavDrawer";
 
 interface ToolbarProps {
   onExport: () => void;
@@ -11,8 +14,9 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
-  const { hasImage } = useEditorStore();
+  const hasImage = useAtomValue(hasImageAtom);
   const { logEvent } = useAnalytics();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleExport = () => {
     onExport();
@@ -25,7 +29,7 @@ export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-3 sm:px-5 border-b border-amber-500/20 bg-gradient-to-r from-[#0a1f0f] via-[#0f2b16] to-[#0a1f0f] flex-shrink-0 relative">
+    <header className="h-14 flex items-center justify-between px-3 sm:px-5 border-b border-amber-500/20 bg-gradient-to-r from-[#0a1f0f] via-[#0f2b16] to-[#0a1f0f] flex-shrink-0 relative z-20">
       {/* Contained decorative elements — overflow-hidden here instead of on header so dropdown isn't clipped */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Subtle animated gold shimmer across the navbar */}
@@ -107,12 +111,13 @@ export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
           className="text-sm sm:text-base font-semibold bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 bg-clip-text text-transparent tracking-wide whitespace-nowrap"
           style={{ animation: "eidTextGlow 3s ease-in-out infinite" }}
         >
-          🌙 Happy Eid Mubarak ✨
+          <span className="hidden sm:inline">🌙 Happy Eid Mubarak ✨</span>
+          <span className="sm:hidden">🌙 Eid Mubarak ✨</span>
         </span>
       </div>
 
-      {/* Right — Actions */}
-      <div className="flex items-center gap-2 relative z-10">
+      {/* Right — Desktop actions (lg+) */}
+      <div className="hidden lg:flex items-center gap-2 relative z-10">
         <Link
           href="/changelog"
           className="text-xs font-medium bg-gradient-to-r from-amber-300 to-emerald-400 bg-clip-text text-transparent hover:from-amber-200 hover:to-emerald-300 transition-all"
@@ -126,6 +131,35 @@ export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
           disabled={!hasImage}
         />
       </div>
+
+      {/* Right — Mobile hamburger (< lg) */}
+      <button
+        onClick={() => setDrawerOpen(true)}
+        className="lg:hidden relative z-10 p-2 text-white/70 hover:text-white transition-colors"
+        aria-label="Open menu"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+
+      {/* Mobile side drawer */}
+      <MobileNavDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onExport={handleExport}
+        disabled={!hasImage}
+      />
     </header>
   );
 }

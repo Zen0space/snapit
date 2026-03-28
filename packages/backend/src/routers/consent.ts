@@ -43,57 +43,49 @@ export const consentRouter = router({
         limit: z.number().int().min(1).max(100).default(50),
       }),
     )
-    .query(
-      async ({
-        input,
-      }): Promise<{
-        records: CookieConsentRecord[];
-        total: number;
-        pages: number;
-      }> => {
-        const skip = (input.page - 1) * input.limit;
+    .query(async ({ input }) => {
+      const skip = (input.page - 1) * input.limit;
 
-        try {
-          const [rows, total] = await Promise.all([
-            prisma.cookieConsent.findMany({
-              orderBy: { updatedAt: "desc" },
-              skip,
-              take: input.limit,
-            }),
-            prisma.cookieConsent.count(),
-          ]);
+      try {
+        const [rows, total] = await Promise.all([
+          prisma.cookieConsent.findMany({
+            orderBy: { updatedAt: "desc" },
+            skip,
+            take: input.limit,
+          }),
+          prisma.cookieConsent.count(),
+        ]);
 
-          // Fetch per-visitor event counts in one query
-          const visitorIds = rows.map((r: { visitorId: string }) => r.visitorId);
-          const eventCounts = await prisma.event.groupBy({
-            by: ["visitorId"],
-            _count: { visitorId: true },
-            where: { visitorId: { in: visitorIds } },
-          });
+        // Fetch per-visitor event counts in one query
+        const visitorIds = rows.map((r) => r.visitorId);
+        const eventCounts = await prisma.event.groupBy({
+          by: ["visitorId"],
+          _count: { visitorId: true },
+          where: { visitorId: { in: visitorIds } },
+        });
 
-          const countMap = new Map(
-            eventCounts.map((ec: { visitorId: string | null; _count: { visitorId: number } }) => [ec.visitorId, ec._count.visitorId]),
-          );
+        const countMap = new Map(
+          eventCounts.map((ec) => [ec.visitorId, ec._count.visitorId]),
+        );
 
-          return {
-            records: rows.map((r: { id: string; visitorId: string; consent: string; createdAt: Date; updatedAt: Date }) => ({
-              id: r.id,
-              visitorId: r.visitorId,
-              consent: r.consent as CookieConsentRecord["consent"],
-              eventCount: countMap.get(r.visitorId) ?? 0,
-              createdAt: r.createdAt.toISOString(),
-              updatedAt: r.updatedAt.toISOString(),
-            })),
-            total,
-            pages: Math.ceil(total / input.limit),
-          };
-        } catch (error) {
-          console.error("[consent] Failed to fetch consents:", error);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to fetch consent records",
-          });
-        }
-      },
-    ),
+        return {
+          records: rows.map((r) => ({
+            id: r.id,
+            visitorId: r.visitorId,
+            consent: r.consent as CookieConsentRecord["consent"],
+            eventCount: countMap.get(r.visitorId) ?? 0,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+          })),
+          total,
+          pages: Math.ceil(total / input.limit),
+        };
+      } catch (error) {
+        console.error("[consent] Failed to fetch consents:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch consent records",
+        });
+      }
+    }),
 });

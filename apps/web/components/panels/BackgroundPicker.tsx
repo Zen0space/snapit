@@ -1,13 +1,16 @@
 "use client";
 
 import { BACKGROUND_PRESETS, type BackgroundPreset } from "@/lib/presets";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { backgroundAtom, customBgColorAtom } from "@/store/atoms";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { PanelSection } from "@/components/ui/PanelSection";
 
 export default function BackgroundPicker() {
-  const { background, setBackground, customBgColor, setCustomBgColor } =
-    useEditorStore();
+  const background = useAtomValue(backgroundAtom);
+  const setBackground = useSetAtom(backgroundAtom);
+  const customBgColor = useAtomValue(customBgColorAtom);
+  const setCustomBgColor = useSetAtom(customBgColorAtom);
   const { logEvent } = useAnalytics();
 
   const handleSelect = (preset: BackgroundPreset) => {
