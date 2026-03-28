@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue } from "jotai";
+import { hasImageAtom } from "@/store/atoms";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import ExportDropdown from "./ExportDropdown";
 
@@ -11,7 +12,7 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({ onExport, onCopyToClipboard }: ToolbarProps) {
-  const { hasImage } = useEditorStore();
+  const hasImage = useAtomValue(hasImageAtom);
   const { logEvent } = useAnalytics();
 
   const handleExport = () => {

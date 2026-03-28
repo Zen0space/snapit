@@ -1,7 +1,8 @@
 import { useCallback } from "react";
-import type { EventType } from "@snap-it/types";
+import type { ConsentLevel, EventType } from "@snap-it/types";
 import { trpc } from "@/lib/trpc";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
+import { LS_COOKIE_CONSENT, LS_VISITOR_ID } from "@/shared/constants";
 
 /** Events allowed under "necessary only" consent. */
 const NECESSARY_EVENTS: ReadonlySet<EventType> = new Set([
@@ -30,9 +31,9 @@ export function useAnalytics() {
       // Fallback: if React state is null but localStorage has value, use it
       let effectiveConsent = consent;
       if (consent === null && typeof window !== "undefined") {
-        const stored = localStorage.getItem("snap_cookie_consent");
+        const stored = localStorage.getItem(LS_COOKIE_CONSENT);
         if (stored === "all" || stored === "necessary") {
-          effectiveConsent = stored as "all" | "necessary";
+          effectiveConsent = stored as ConsentLevel;
         }
       }
 
@@ -44,7 +45,7 @@ export function useAnalytics() {
       // Fallback: if visitorId is null but localStorage has it, use it
       let effectiveVisitorId = visitorId;
       if (!effectiveVisitorId && typeof window !== "undefined") {
-        effectiveVisitorId = localStorage.getItem("snap_visitor_id") ?? null;
+        effectiveVisitorId = localStorage.getItem(LS_VISITOR_ID) ?? null;
       }
 
       trpc.analytics.logEvent

@@ -1,12 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { ConsentLevel } from "@snap-it/types";
 import { trpc } from "@/lib/trpc";
-
-export type CookieConsent = "all" | "necessary";
-
-const CONSENT_KEY = "snap_cookie_consent";
-const VISITOR_KEY = "snap_visitor_id";
+import { LS_COOKIE_CONSENT, LS_VISITOR_ID } from "@/shared/constants";
 
 /**
  * Reads and writes cookie consent to localStorage.
@@ -19,14 +16,14 @@ const VISITOR_KEY = "snap_visitor_id";
  * the backend (fire-and-forget) so the admin can see them in the Cookies page.
  */
 export function useCookieConsent() {
-  const [consent, setConsentState] = useState<CookieConsent | null>(null);
+  const [consent, setConsentState] = useState<ConsentLevel | null>(null);
   const [visitorId, setVisitorIdState] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   // Read persisted values after mount to avoid SSR mismatch
   useEffect(() => {
-    const storedConsent = localStorage.getItem(CONSENT_KEY);
-    const storedVisitorId = localStorage.getItem(VISITOR_KEY);
+    const storedConsent = localStorage.getItem(LS_COOKIE_CONSENT);
+    const storedVisitorId = localStorage.getItem(LS_VISITOR_ID);
 
     if (storedConsent === "all" || storedConsent === "necessary") {
       setConsentState(storedConsent);
@@ -38,16 +35,16 @@ export function useCookieConsent() {
     setHydrated(true);
   }, []);
 
-  const setConsent = useCallback((value: CookieConsent) => {
+  const setConsent = useCallback((value: ConsentLevel) => {
     // Reuse existing visitorId or generate a new one on first consent
-    let vid = localStorage.getItem(VISITOR_KEY);
+    let vid = localStorage.getItem(LS_VISITOR_ID);
     if (!vid) {
       vid = crypto.randomUUID();
-      localStorage.setItem(VISITOR_KEY, vid);
+      localStorage.setItem(LS_VISITOR_ID, vid);
       setVisitorIdState(vid);
     }
 
-    localStorage.setItem(CONSENT_KEY, value);
+    localStorage.setItem(LS_COOKIE_CONSENT, value);
     setConsentState(value);
 
     // Sync to backend — fire-and-forget, must never block or throw

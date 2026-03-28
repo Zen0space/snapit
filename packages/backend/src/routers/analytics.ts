@@ -167,31 +167,23 @@ export const analyticsRouter = router({
         totalEvents,
         exportsToday,
         copiesToday,
-        topCountries: countryRows.map(
-          (r: { country: string | null; _count: { country: number } }) => ({
-            country: r.country ?? "Unknown",
-            count: r._count.country,
-          }),
-        ),
-        topBrowsers: browserRows.map(
-          (r: { browser: string | null; _count: { browser: number } }) => ({
-            browser: r.browser ?? "Unknown",
-            count: r._count.browser,
-          }),
-        ),
-        topDevices: deviceRows.map(
-          (r: { device: string | null; _count: { device: number } }) => ({
-            device: r.device ?? "Unknown",
-            count: r._count.device,
-          }),
-        ),
-        eventsOverTime: dailyRows.map(
-          (r: { date: string; exports: bigint; copies: bigint }) => ({
-            date: r.date,
-            exports: Number(r.exports),
-            copies: Number(r.copies),
-          }),
-        ),
+        topCountries: countryRows.map((r) => ({
+          country: r.country ?? "Unknown",
+          count: r._count.country,
+        })),
+        topBrowsers: browserRows.map((r) => ({
+          browser: r.browser ?? "Unknown",
+          count: r._count.browser,
+        })),
+        topDevices: deviceRows.map((r) => ({
+          device: r.device ?? "Unknown",
+          count: r._count.device,
+        })),
+        eventsOverTime: dailyRows.map((r) => ({
+          date: r.date,
+          exports: Number(r.exports),
+          copies: Number(r.copies),
+        })),
       };
     } catch (error) {
       console.error("[analytics] Failed to fetch stats:", error);
@@ -227,24 +219,10 @@ export const analyticsRouter = router({
         ]);
 
         return {
-          events: events.map(
-            (e: {
-              id: string;
-              type: string;
-              tool: string | null;
-              meta: string | null;
-              visitorId: string | null;
-              country: string | null;
-              region: string | null;
-              browser: string | null;
-              os: string | null;
-              device: string | null;
-              createdAt: Date;
-            }) => ({
-              ...e,
-              createdAt: e.createdAt.toISOString(),
-            }),
-          ),
+          events: events.map((e) => ({
+            ...e,
+            createdAt: e.createdAt.toISOString(),
+          })),
           total,
           pages: Math.ceil(total / input.limit),
         };

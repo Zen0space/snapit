@@ -1,21 +1,27 @@
 "use client";
 
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import {
+  shadowAtom,
+  updateShadowAtom,
+  cornerRadiusAtom,
+  canvasCornerRadiusAtom,
+  paddingAtom,
+  setPaddingAtom,
+} from "@/store/atoms";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { PanelSection } from "@/components/ui/PanelSection";
 import { Slider } from "@/components/ui/Slider";
 
 export default function ShadowControls() {
-  const {
-    shadow,
-    setShadow,
-    cornerRadius,
-    setCornerRadius,
-    canvasCornerRadius,
-    setCanvasCornerRadius,
-    padding,
-    setPadding,
-  } = useEditorStore();
+  const shadow = useAtomValue(shadowAtom);
+  const setShadow = useSetAtom(updateShadowAtom);
+  const cornerRadius = useAtomValue(cornerRadiusAtom);
+  const setCornerRadius = useSetAtom(cornerRadiusAtom);
+  const canvasCornerRadius = useAtomValue(canvasCornerRadiusAtom);
+  const setCanvasCornerRadius = useSetAtom(canvasCornerRadiusAtom);
+  const padding = useAtomValue(paddingAtom);
+  const setPadding = useSetAtom(setPaddingAtom);
   const { logEvent } = useAnalytics();
 
   return (

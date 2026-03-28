@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { useEditorStore } from "@/store/editorStore";
+import { useSetAtom, useStore } from "jotai";
+import {
+  backgroundAtom,
+  shadowAtom,
+  cornerRadiusAtom,
+  paddingAtom,
+  canvasModeAtom,
+  canvasWidthAtom,
+  canvasHeightAtom,
+  setUploadedImageDimensionsAtom,
+} from "@/store/atoms";
 import { makeFabricGradient, type CanvasRefs } from "./useCanvasCore";
 import { drawEidPattern, type EidPatternId } from "@/lib/eidPatterns";
 
@@ -14,10 +24,11 @@ interface UseCanvasStyleProps {
 
 /**
  * Applies background, shadow and corner-radius changes to the Fabric canvas.
- * Watches the relevant store slices and re-applies whenever they change.
+ * Functions read atom values via store.get() so they are stable (no useCallback
+ * dep churn). Atom subscriptions trigger re-application automatically.
  */
 export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
-  const { background, shadow, cornerRadius } = useEditorStore();
+  const store = useStore();
 
   // ── Background ─────────────────────────────────────────────────────────────
   const applyBackground = useCallback(() => {
@@ -25,6 +36,7 @@ export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
     const fabric = refs.fabricRef.current;
     if (!canvas || !fabric) return;
 
+    const background = store.get(backgroundAtom);
     const { width, height } = canvas;
 
     if (background.value === "transparent") {
@@ -70,13 +82,16 @@ export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
     }
 
     canvas.renderAll();
-  }, [background, refs.canvasRef, refs.fabricRef]);
+  }, [store, refs.canvasRef, refs.fabricRef]);
 
   // ── Shadow + corner radius ─────────────────────────────────────────────────
   const applyStyle = useCallback(() => {
     const obj = refs.screenshotRef.current;
     const fabric = refs.fabricRef.current;
     if (!obj || !fabric) return;
+
+    const shadow = store.get(shadowAtom);
+    const cornerRadius = store.get(cornerRadiusAtom);
 
     obj.set({
       clipPath: new fabric.Rect({
@@ -99,21 +114,19 @@ export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
 
     obj.setCoords();
     refs.canvasRef.current?.requestRenderAll();
-  }, [
-    shadow,
-    cornerRadius,
-    refs.screenshotRef,
-    refs.fabricRef,
-    refs.canvasRef,
-  ]);
+  }, [store, refs.screenshotRef, refs.fabricRef, refs.canvasRef]);
 
-  // ── Effects ────────────────────────────────────────────────────────────────
+  // ── Subscribe to atom changes ─────────────────────────────────────────────
+  // Replaces the two useEffects that re-ran applyBackground/applyStyle on every
+  // useCallback identity change. store.sub fires only when atom values change.
   useEffect(() => {
-    applyBackground();
-  }, [applyBackground]);
-  useEffect(() => {
-    applyStyle();
-  }, [applyStyle]);
+    const unsubs = [
+      store.sub(backgroundAtom, applyBackground),
+      store.sub(shadowAtom, applyStyle),
+      store.sub(cornerRadiusAtom, applyStyle),
+    ];
+    return () => unsubs.forEach((fn) => fn());
+  }, [store, applyBackground, applyStyle]);
 
   return { applyBackground, applyStyle };
 }
@@ -128,7 +141,8 @@ interface UseCanvasImageProps {
 }
 
 export function useCanvasImage({ refs, applyBackground }: UseCanvasImageProps) {
-  const { setUploadedImageDimensions } = useEditorStore();
+  const setUploadedImageDimensions = useSetAtom(setUploadedImageDimensionsAtom);
+  const store = useStore();
 
   const loadImage = useCallback(
     (dataUrl: string) => {
@@ -136,26 +150,27 @@ export function useCanvasImage({ refs, applyBackground }: UseCanvasImageProps) {
       const fabric = refs.fabricRef.current;
       if (!canvas || !fabric) return;
 
-      const {
-        shadow: shadowCfg,
-        cornerRadius: cr,
-        padding: pad,
-        canvasMode,
-        canvasWidth,
-        canvasHeight,
-      } = useEditorStore.getState();
+      const shadowCfg = store.get(shadowAtom);
+      const cr = store.get(cornerRadiusAtom);
+      const pad = store.get(paddingAtom);
+      const canvasMode = store.get(canvasModeAtom);
+      const cWidth = store.get(canvasWidthAtom);
+      const cHeight = store.get(canvasHeightAtom);
 
       fabric.FabricImage.fromURL(dataUrl)
         .then((img: FabricImage) => {
           if (img.width && img.height) {
-            setUploadedImageDimensions(img.width, img.height);
+            setUploadedImageDimensions({
+              width: img.width,
+              height: img.height,
+            });
           }
 
           const { width: cw, height: ch } = canvas;
 
           let displayScale = 1;
           if (canvasMode === "manual") {
-            displayScale = Math.min(cw / canvasWidth, ch / canvasHeight);
+            displayScale = Math.min(cw / cWidth, ch / cHeight);
           }
 
           const displayPadding = pad * displayScale;
@@ -208,6 +223,7 @@ export function useCanvasImage({ refs, applyBackground }: UseCanvasImageProps) {
     [
       applyBackground,
       setUploadedImageDimensions,
+      store,
       refs.canvasRef,
       refs.fabricRef,
       refs.screenshotRef,

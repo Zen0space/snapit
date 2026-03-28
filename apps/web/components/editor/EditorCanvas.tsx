@@ -1,11 +1,35 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useEditorStore } from "@/store/editorStore";
+import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import { useAtomValue, useStore } from "jotai";
+import {
+  canvasVisibleAtom,
+  canvasCornerRadiusAtom,
+  canvasModeAtom,
+  canvasWidthAtom,
+  canvasHeightAtom,
+  aspectRatioAtom,
+  paddingAtom,
+  uploadedImageWidthAtom,
+  uploadedImageHeightAtom,
+  activeToolAtom,
+} from "@/store/atoms";
 import { useCanvasDimensions, type CanvasRefs } from "@/hooks/useCanvasCore";
 import { useCanvasStyle, useCanvasImage } from "@/hooks/useCanvasStyle";
 import { useCanvasTools } from "@/hooks/useCanvasTools";
 import { useImageAlignment } from "@/hooks/useImageAlignment";
+
+// ---------------------------------------------------------------------------
+// Public handle type — consumed by parent via useRef<EditorCanvasHandle>
+// ---------------------------------------------------------------------------
+
+export interface EditorCanvasHandle {
+  exportImage: () => Promise<void>;
+  copyToClipboard: () => Promise<void>;
+  centerHorizontal: () => void;
+  centerVertical: () => void;
+  centerBoth: () => void;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,297 +74,274 @@ function calculateExportMultiplier(
 
 interface EditorCanvasProps {
   imageDataUrl: string | null;
-  onExportReady: (exportFn: () => void) => void;
-  onCopyReady: (copyFn: () => void) => void;
-  onAlignmentReady?: (fns: {
-    centerHorizontal: () => void;
-    centerVertical: () => void;
-    centerBoth: () => void;
-  }) => void;
 }
 
-export default function EditorCanvas({
-  imageDataUrl,
-  onExportReady,
-  onCopyReady,
-  onAlignmentReady,
-}: EditorCanvasProps) {
-  // ── Refs ──────────────────────────────────────────────────────────────────
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasElRef = useRef<HTMLCanvasElement>(null);
-  const fabricRef = useRef<typeof import("fabric") | null>(null);
-  const canvasRef = useRef<InstanceType<typeof import("fabric").Canvas> | null>(
-    null,
-  );
-  const screenshotRef = useRef<InstanceType<
-    typeof import("fabric").FabricImage
-  > | null>(null);
-  const fabricReadyRef = useRef(false);
-  // Mirror prop into ref so async init reads the latest value without being a dep
-  const imageUrlRef = useRef<string | null>(imageDataUrl);
-  imageUrlRef.current = imageDataUrl;
+const EditorCanvas = forwardRef<EditorCanvasHandle, EditorCanvasProps>(
+  function EditorCanvas({ imageDataUrl }, ref) {
+    // ── Refs ──────────────────────────────────────────────────────────────────
+    const containerRef = useRef<HTMLDivElement>(null);
+    const canvasElRef = useRef<HTMLCanvasElement>(null);
+    const fabricRef = useRef<typeof import("fabric") | null>(null);
+    const canvasRef = useRef<InstanceType<
+      typeof import("fabric").Canvas
+    > | null>(null);
+    const screenshotRef = useRef<InstanceType<
+      typeof import("fabric").FabricImage
+    > | null>(null);
+    const fabricReadyRef = useRef(false);
+    // Mirror prop into ref so async init reads the latest value without being a dep
+    const imageUrlRef = useRef<string | null>(imageDataUrl);
+    imageUrlRef.current = imageDataUrl;
 
-  const refs: CanvasRefs = {
-    containerRef,
-    canvasElRef,
-    fabricRef,
-    canvasRef,
-    screenshotRef,
-    fabricReadyRef,
-  };
+    const refs: CanvasRefs = {
+      containerRef,
+      canvasElRef,
+      fabricRef,
+      canvasRef,
+      screenshotRef,
+      fabricReadyRef,
+    };
 
-  // ── Store ─────────────────────────────────────────────────────────────────
-  const {
-    canvasVisible,
-    canvasCornerRadius,
-    canvasMode,
-    canvasWidth,
-    canvasHeight,
-    aspectRatio,
-    padding,
-    uploadedImageWidth,
-    uploadedImageHeight,
-  } = useEditorStore();
+    // ── Store ─────────────────────────────────────────────────────────────────
+    const canvasVisible = useAtomValue(canvasVisibleAtom);
+    const canvasCornerRadius = useAtomValue(canvasCornerRadiusAtom);
+    const canvasMode = useAtomValue(canvasModeAtom);
+    const canvasWidth = useAtomValue(canvasWidthAtom);
+    const canvasHeight = useAtomValue(canvasHeightAtom);
+    const aspectRatio = useAtomValue(aspectRatioAtom);
+    const padding = useAtomValue(paddingAtom);
+    const store = useStore();
 
-  // ── Composed hooks ─────────────────────────────────────────────────────────
-  const { getDimensions } = useCanvasDimensions({ containerRef });
-  const { applyBackground, applyStyle } = useCanvasStyle({ refs });
-  const { loadImage } = useCanvasImage({ refs, applyBackground });
-  const { centerHorizontal, centerVertical, centerBoth } = useImageAlignment({
-    canvasRef,
-    screenshotRef,
-  });
-  useCanvasTools({ refs });
+    // ── Composed hooks ─────────────────────────────────────────────────────────
+    const { getDimensions } = useCanvasDimensions({ containerRef });
+    const { applyBackground, applyStyle } = useCanvasStyle({ refs });
+    const { loadImage } = useCanvasImage({ refs, applyBackground });
+    const { centerHorizontal, centerVertical, centerBoth } = useImageAlignment({
+      canvasRef,
+      screenshotRef,
+    });
+    useCanvasTools({ refs });
 
-  // ── Init Fabric (runs once on mount) ──────────────────────────────────────
-  // Intentional empty dep array: Fabric is loaded once and cleaned up on unmount.
-  // getDimensions / applyBackground / loadImage are stable callbacks and safe to call
-  // directly inside the async IIFE via closure.
-  useEffect(() => {
-    let alive = true;
+    // ── Init Fabric (runs once on mount) ──────────────────────────────────────
+    // Intentional empty dep array: Fabric is loaded once and cleaned up on unmount.
+    // getDimensions / applyBackground / loadImage are stable callbacks and safe to call
+    // directly inside the async IIFE via closure.
+    useEffect(() => {
+      let alive = true;
 
-    (async () => {
-      const fabric = await import("fabric");
-      if (!alive || !canvasElRef.current) return;
+      (async () => {
+        const fabric = await import("fabric");
+        if (!alive || !canvasElRef.current) return;
 
-      fabricRef.current = fabric;
+        fabricRef.current = fabric;
+
+        const { width, height } = getDimensions();
+        const canvas = new fabric.Canvas(canvasElRef.current, {
+          width,
+          height,
+          selection: true,
+          preserveObjectStacking: true,
+        });
+
+        canvasRef.current = canvas;
+        fabricReadyRef.current = true;
+
+        applyBackground();
+
+        if (imageUrlRef.current) loadImage(imageUrlRef.current);
+      })();
+
+      return () => {
+        alive = false;
+        fabricReadyRef.current = false;
+        canvasRef.current?.dispose();
+        canvasRef.current = null;
+        fabricRef.current = null;
+        screenshotRef.current = null;
+      };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional one-time init
+
+    // ── React to new imageDataUrl prop ────────────────────────────────────────
+    // fabricReadyRef guards against calling loadImage before canvas is ready.
+    // loadImage is intentionally excluded: it's a stable callback and re-running
+    // on its identity change would cause duplicate loads.
+    useEffect(() => {
+      if (!imageDataUrl || !fabricReadyRef.current) return;
+      loadImage(imageDataUrl);
+    }, [imageDataUrl]); // eslint-disable-line react-hooks/exhaustive-deps -- guarded by fabricReadyRef
+
+    // ── React to layout changes (ratio / padding / canvas size) ───────────────
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      const fabric = fabricRef.current;
+      if (!canvas || !fabric) return;
 
       const { width, height } = getDimensions();
-      const canvas = new fabric.Canvas(canvasElRef.current, {
-        width,
-        height,
-        selection: true,
-        preserveObjectStacking: true,
-      });
+      canvas.setWidth(width);
+      canvas.setHeight(height);
 
-      canvasRef.current = canvas;
-      fabricReadyRef.current = true;
-
-      applyBackground();
-
-      if (imageUrlRef.current) loadImage(imageUrlRef.current);
-    })();
-
-    return () => {
-      alive = false;
-      fabricReadyRef.current = false;
-      canvasRef.current?.dispose();
-      canvasRef.current = null;
-      fabricRef.current = null;
-      screenshotRef.current = null;
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional one-time init
-
-  // ── React to new imageDataUrl prop ────────────────────────────────────────
-  // fabricReadyRef guards against calling loadImage before canvas is ready.
-  // loadImage is intentionally excluded: it's a stable callback and re-running
-  // on its identity change would cause duplicate loads.
-  useEffect(() => {
-    if (!imageDataUrl || !fabricReadyRef.current) return;
-    loadImage(imageDataUrl);
-  }, [imageDataUrl]); // eslint-disable-line react-hooks/exhaustive-deps -- guarded by fabricReadyRef
-
-  // ── React to layout changes (ratio / padding / canvas size) ───────────────
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const fabric = fabricRef.current;
-    if (!canvas || !fabric) return;
-
-    const { width, height } = getDimensions();
-    canvas.setWidth(width);
-    canvas.setHeight(height);
-
-    const obj = screenshotRef.current;
-    if (obj) {
-      let displayScale = 1;
-      if (canvasMode === "manual") {
-        displayScale = Math.min(width / canvasWidth, height / canvasHeight);
-      }
-
-      const displayPadding = padding * displayScale;
-      const scale = Math.min(
-        (width - displayPadding * 2) / (obj.width ?? 1),
-        (height - displayPadding * 2) / (obj.height ?? 1),
-      );
-      obj.set({
-        left: width / 2,
-        top: height / 2,
-        scaleX: scale,
-        scaleY: scale,
-      });
-      obj.setCoords();
-      applyStyle();
-    }
-
-    applyBackground();
-  }, [
-    aspectRatio,
-    padding,
-    canvasMode,
-    canvasWidth,
-    canvasHeight,
-    getDimensions,
-    applyStyle,
-    applyBackground,
-  ]);
-
-  // ── Export ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    onExportReady(async () => {
-      const canvas = canvasRef.current;
-      const img = screenshotRef.current;
-      if (!canvas) return;
-
-      const multiplier = calculateExportMultiplier(
-        canvas,
-        img,
-        uploadedImageWidth,
-        uploadedImageHeight,
-        canvasWidth,
-        canvasHeight,
-      );
-
-      try {
-        // Render to an offscreen canvas, then convert to Blob.
-        // This avoids huge base-64 data-URL strings that crash mobile browsers.
-        const offscreen = canvas.toCanvasElement(multiplier);
-
-        const blob = await new Promise<Blob | null>((resolve) =>
-          offscreen.toBlob(resolve, "image/png"),
-        );
-        if (!blob) return;
-
-        // Try native share on mobile (iOS/Android) — gives "Save Image" option
-        if (
-          typeof navigator.share === "function" &&
-          navigator.canShare?.({
-            files: [new File([blob], "snap-it.png", { type: "image/png" })],
-          })
-        ) {
-          const file = new File([blob], "snap-it.png", { type: "image/png" });
-          await navigator.share({ files: [file] });
-          return;
+      const obj = screenshotRef.current;
+      if (obj) {
+        let displayScale = 1;
+        if (canvasMode === "manual") {
+          displayScale = Math.min(width / canvasWidth, height / canvasHeight);
         }
 
-        // Desktop / browsers without Web Share: Object URL + anchor click
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "snap-it.png";
-        document.body.appendChild(a);
-        a.click();
-        // Clean up
-        requestAnimationFrame(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        });
-      } catch {
-        // Last-resort fallback: open the image in a new tab
-        const dataUrl = canvas.toDataURL({ format: "png", multiplier });
-        window.open(dataUrl, "_blank");
-      }
-    });
-  }, [
-    onExportReady,
-    canvasMode,
-    canvasWidth,
-    canvasHeight,
-    uploadedImageWidth,
-    uploadedImageHeight,
-  ]);
-
-  // ── Copy to Clipboard ──────────────────────────────────────────────────────
-  useEffect(() => {
-    onCopyReady(async () => {
-      const canvas = canvasRef.current;
-      const img = screenshotRef.current;
-      if (!canvas) return;
-
-      const multiplier = calculateExportMultiplier(
-        canvas,
-        img,
-        uploadedImageWidth,
-        uploadedImageHeight,
-        canvasWidth,
-        canvasHeight,
-      );
-
-      try {
-        // Render to an offscreen canvas, then convert directly to Blob
-        const offscreen = canvas.toCanvasElement(multiplier);
-        const blob = await new Promise<Blob | null>((resolve) =>
-          offscreen.toBlob(resolve, "image/png"),
+        const displayPadding = padding * displayScale;
+        const scale = Math.min(
+          (width - displayPadding * 2) / (obj.width ?? 1),
+          (height - displayPadding * 2) / (obj.height ?? 1),
         );
-        if (!blob) return;
-
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-      } catch {
-        // Silently fail — clipboard API may be unsupported or denied
+        obj.set({
+          left: width / 2,
+          top: height / 2,
+          scaleX: scale,
+          scaleY: scale,
+        });
+        obj.setCoords();
+        applyStyle();
       }
-    });
-  }, [
-    onCopyReady,
-    canvasMode,
-    canvasWidth,
-    canvasHeight,
-    uploadedImageWidth,
-    uploadedImageHeight,
-  ]);
 
-  // ── Alignment ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    onAlignmentReady?.({ centerHorizontal, centerVertical, centerBoth });
-  }, [onAlignmentReady, centerHorizontal, centerVertical, centerBoth]);
+      applyBackground();
+    }, [
+      aspectRatio,
+      padding,
+      canvasMode,
+      canvasWidth,
+      canvasHeight,
+      getDimensions,
+      applyStyle,
+      applyBackground,
+    ]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div
-      ref={containerRef}
-      className="flex-1 flex items-center justify-center overflow-hidden relative"
-    >
-      {canvasVisible && (
-        <div className="relative pt-12">
-          <ReplaceImageButton onLoad={loadImage} />
-          <div
-            className="overflow-hidden shadow-2xl"
-            style={{ borderRadius: `${canvasCornerRadius}px` }}
-          >
-            <canvas ref={canvasElRef} />
+    // ── Imperative handle (replaces callback-registration useEffects) ────────
+    useImperativeHandle(
+      ref,
+      () => ({
+        async exportImage() {
+          const canvas = canvasRef.current;
+          const img = screenshotRef.current;
+          if (!canvas) return;
+
+          const multiplier = calculateExportMultiplier(
+            canvas,
+            img,
+            store.get(uploadedImageWidthAtom),
+            store.get(uploadedImageHeightAtom),
+            store.get(canvasWidthAtom),
+            store.get(canvasHeightAtom),
+          );
+
+          try {
+            // Render to an offscreen canvas, then convert to Blob.
+            // This avoids huge base-64 data-URL strings that crash mobile browsers.
+            const offscreen = canvas.toCanvasElement(multiplier);
+
+            const blob = await new Promise<Blob | null>((resolve) =>
+              offscreen.toBlob(resolve, "image/png"),
+            );
+            if (!blob) return;
+
+            // Try native share on mobile (iOS/Android) — gives "Save Image" option
+            if (
+              typeof navigator.share === "function" &&
+              navigator.canShare?.({
+                files: [new File([blob], "snap-it.png", { type: "image/png" })],
+              })
+            ) {
+              const file = new File([blob], "snap-it.png", {
+                type: "image/png",
+              });
+              await navigator.share({ files: [file] });
+              return;
+            }
+
+            // Desktop / browsers without Web Share: Object URL + anchor click
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "snap-it.png";
+            document.body.appendChild(a);
+            a.click();
+            // Clean up
+            requestAnimationFrame(() => {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            });
+          } catch {
+            // Last-resort fallback: open the image in a new tab
+            const dataUrl = canvas.toDataURL({ format: "png", multiplier });
+            window.open(dataUrl, "_blank");
+          }
+        },
+
+        async copyToClipboard() {
+          const canvas = canvasRef.current;
+          const img = screenshotRef.current;
+          if (!canvas) return;
+
+          const multiplier = calculateExportMultiplier(
+            canvas,
+            img,
+            store.get(uploadedImageWidthAtom),
+            store.get(uploadedImageHeightAtom),
+            store.get(canvasWidthAtom),
+            store.get(canvasHeightAtom),
+          );
+
+          try {
+            // Render to an offscreen canvas, then convert directly to Blob
+            const offscreen = canvas.toCanvasElement(multiplier);
+            const blob = await new Promise<Blob | null>((resolve) =>
+              offscreen.toBlob(resolve, "image/png"),
+            );
+            if (!blob) return;
+
+            await navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob }),
+            ]);
+          } catch {
+            // Silently fail — clipboard API may be unsupported or denied
+          }
+        },
+
+        centerHorizontal,
+        centerVertical,
+        centerBoth,
+      }),
+      [store, centerHorizontal, centerVertical, centerBoth],
+    );
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    return (
+      <div
+        ref={containerRef}
+        className="flex-1 flex items-center justify-center overflow-hidden relative"
+      >
+        {canvasVisible && (
+          <div className="relative pt-12">
+            <ReplaceImageButton onLoad={loadImage} />
+            <div
+              className="overflow-hidden shadow-2xl"
+              style={{ borderRadius: `${canvasCornerRadius}px` }}
+            >
+              <canvas ref={canvasElRef} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {!canvasVisible && (
-        <div className="text-white/40 text-sm">Canvas hidden</div>
-      )}
+        {!canvasVisible && (
+          <div className="text-white/40 text-sm">Canvas hidden</div>
+        )}
 
-      {/* Tool hint bar */}
-      <ToolHint />
-    </div>
-  );
-}
+        {/* Tool hint bar */}
+        <ToolHint />
+      </div>
+    );
+  },
+);
+
+export default EditorCanvas;
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -388,7 +389,7 @@ function ReplaceImageButton({ onLoad }: { onLoad: (dataUrl: string) => void }) {
 }
 
 function ToolHint() {
-  const { activeTool } = useEditorStore();
+  const activeTool = useAtomValue(activeToolAtom);
   if (activeTool === "select") return null;
 
   return (

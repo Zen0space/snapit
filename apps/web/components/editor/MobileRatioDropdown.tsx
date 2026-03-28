@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { aspectRatioAtom, setAspectRatioAtom } from "@/store/atoms";
 import { ASPECT_RATIO_PRESETS, type AspectRatioPreset } from "@/lib/presets";
 import { useClickOutside } from "@/hooks/useClickOutside";
 
 export default function MobileRatioDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { aspectRatio, setAspectRatio } = useEditorStore();
+  const aspectRatio = useAtomValue(aspectRatioAtom);
+  const setAspectRatio = useSetAtom(setAspectRatioAtom);
 
   const close = useCallback(() => setIsOpen(false), []);
   useClickOutside(dropdownRef, close);

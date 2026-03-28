@@ -1,11 +1,13 @@
 "use client";
 
 import { ASPECT_RATIO_PRESETS, type AspectRatioPreset } from "@/lib/presets";
-import { useEditorStore } from "@/store/editorStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { aspectRatioAtom, setAspectRatioAtom } from "@/store/atoms";
 import { PanelSection } from "@/components/ui/PanelSection";
 
 export default function AspectRatioPanel() {
-  const { aspectRatio, setAspectRatio } = useEditorStore();
+  const aspectRatio = useAtomValue(aspectRatioAtom);
+  const setAspectRatio = useSetAtom(setAspectRatioAtom);
 
   const handleSelect = (preset: AspectRatioPreset) => {
     setAspectRatio(preset);
