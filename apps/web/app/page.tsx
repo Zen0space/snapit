@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import dynamic from "next/dynamic";
+import { useState, useCallback, useRef, lazy, Suspense } from "react";
 import Toolbar from "@/components/editor/Toolbar";
 import LeftPanel from "@/components/editor/LeftPanel";
 import RightPanel from "@/components/editor/RightPanel";
@@ -15,14 +14,14 @@ import { useAtom } from "jotai";
 import { hasImageAtom } from "@/store/atoms";
 import type { EditorCanvasHandle } from "@/components/editor/EditorCanvas";
 
-const EditorCanvas = dynamic(() => import("@/components/editor/EditorCanvas"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  ),
-});
+// React.lazy preserves forwardRef (next/dynamic's LoadableComponent does not)
+const EditorCanvas = lazy(() => import("@/components/editor/EditorCanvas"));
+
+const CanvasSpinner = () => (
+  <div className="flex-1 flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export default function HomePage() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -85,7 +84,9 @@ export default function HomePage() {
             </>
           )}
           {imageDataUrl ? (
-            <EditorCanvas ref={editorRef} imageDataUrl={imageDataUrl} />
+            <Suspense fallback={<CanvasSpinner />}>
+              <EditorCanvas ref={editorRef} imageDataUrl={imageDataUrl} />
+            </Suspense>
           ) : (
             <DropZone onImage={handleImage} />
           )}

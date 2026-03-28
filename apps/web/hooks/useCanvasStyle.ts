@@ -47,6 +47,10 @@ export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
     }
 
     // ── Option B: Eid pattern via offscreen Canvas 2D ─────────────────────
+    // Fully synchronous: pass the offscreen <canvas> element directly to
+    // FabricImage so the background updates in the same tick as the resize.
+    // Previously this used FabricImage.fromURL(dataUrl) which was async and
+    // caused a visible flash of the stale background during padding drags.
     if (background.patternId) {
       const offscreen = document.createElement("canvas");
       drawEidPattern(
@@ -55,15 +59,11 @@ export function useCanvasStyle({ refs }: UseCanvasStyleProps) {
         width,
         height,
       );
-      const dataUrl = offscreen.toDataURL();
 
-      fabric.FabricImage.fromURL(dataUrl).then((img) => {
-        // Ensure we still have the same canvas (guard against unmount)
-        if (refs.canvasRef.current !== canvas) return;
-        img.set({ left: 0, top: 0, originX: "left", originY: "top" });
-        canvas.backgroundImage = img;
-        canvas.renderAll();
-      });
+      const img = new fabric.FabricImage(offscreen);
+      img.set({ left: 0, top: 0, originX: "left", originY: "top" });
+      canvas.backgroundImage = img;
+      canvas.renderAll();
       return;
     }
 
